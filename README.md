@@ -95,7 +95,7 @@ npm run wecom:selfcheck -- --all-accounts
 | 多账户 | ✅ | `channels.wecom.accounts.<id>` |
 | 发送者授权控制 | ✅ | `allowFrom` + 账户级覆盖 |
 | 命令白名单 | ✅ | `/help` `/status` `/clear` 等 |
-| 群聊触发策略 | ✅ | 支持“仅 @ 触发”或“直接触发” |
+| 群聊触发策略 | ✅ | 支持 `direct/mention/keyword` 三种模式 |
 | 文本防抖合并 | ✅ | 窗口期内多条消息合并投递 |
 | 异步补发（超时后） | ✅ | transcript 轮询补发最终回复 |
 | WeCom 出站代理 | ✅ | `outboundProxy` / `WECOM_PROXY` |
@@ -108,7 +108,7 @@ npm run wecom:selfcheck -- --all-accounts
 | 图片发送（出站） | ✅ | Agent 模式支持 |
 | 视频/文件发送（出站） | ✅ | 自动判型上传后发送 |
 | 语音转写（本地） | ✅ | 企业微信 Recognition 优先，缺失时回退本地 whisper |
-| Bot 模式媒体回传 | ⚠️ | 当前以文本 stream 为主，媒体不直接回传 |
+| Bot 模式媒体回传 | ✅ | `response_url` 优先 mixed；Webhook Bot fallback 支持 image/file 回传（失败自动降级链接） |
 
 ## 模式对比
 
@@ -119,7 +119,7 @@ npm run wecom:selfcheck -- --all-accounts
 | 回调路径默认值 | `/wecom/callback` | `/wecom/bot/callback` |
 | 回复机制 | 主动调用 WeCom 发送 API | 回调响应 `stream` + 轮询刷新 |
 | 流式体验 | 多条消息模拟增量 | 原生 stream 协议 |
-| 出站媒体（图/视频/文件） | 支持 | 当前不作为主路径 |
+| 出站媒体（图/视频/文件） | 支持 | 支持（image/file 回传，video 自动按 file 回传） |
 | 典型场景 | 标准企业应用、菜单/回调体系 | 对话机器人、连续流式问答 |
 
 ### 回调路径规划建议
@@ -293,7 +293,7 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | 拒绝文案 | `allowFromRejectMessage` | 未授权提示 |
 | 管理员 | `adminUsers` | 绕过命令白名单 |
 | 命令白名单 | `commands.enabled` + `commands.allowlist` | 限制 `/` 指令 |
-| 群聊触发 | `groupChat.enabled` + `requireMention` | 控制群消息触发条件 |
+| 群聊触发 | `groupChat.enabled` + `triggerMode` + `mentionPatterns` + `triggerKeywords` | 控制群消息触发条件 |
 
 ### 吞吐与稳定性
 

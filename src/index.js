@@ -9,6 +9,7 @@ import { ProxyAgent } from "undici";
 import { WecomSessionTaskQueue, WecomStreamManager } from "./core/stream-manager.js";
 import { resolveWecomAgentRoute } from "./core/agent-routing.js";
 import { createWecomBotReplyDeliverer } from "./wecom/outbound-delivery.js";
+import { createWecomInboundContentBuilder } from "./wecom/inbound-content.js";
 import {
   describeWecomBotParsedMessage,
   extractWecomXmlInboundEnvelope,
@@ -1804,6 +1805,18 @@ const { deliverBotReplyText } = createWecomBotReplyDeliverer({
   finishBotStream,
   getWecomConfig,
   sendWecomText,
+  fetchMediaFromUrl,
+});
+
+const { buildInboundContent } = createWecomInboundContentBuilder({
+  tempDirName: WECOM_TEMP_DIR_NAME,
+  downloadWecomMedia,
+  fetchMediaFromUrl,
+  resolveWecomVoiceTranscriptionConfig,
+  transcribeInboundVoice,
+  sendWecomText,
+  ensureDir: mkdir,
+  writeFile,
 });
 
 function buildTextDebounceBufferKey({ accountId, fromUser, chatId, isGroupChat }) {
@@ -2761,6 +2774,7 @@ async function processBotInboundMessage({
       responseUrl,
       text: contentText,
       mediaUrls: replyMediaUrls,
+      mediaType: String(normalizedReply.mediaType ?? "").trim().toLowerCase() || undefined,
       reason,
     });
     if (!result?.ok && hasBotStream(streamId)) {
@@ -3353,198 +3367,34 @@ async function processInboundMessage({
       }
     }
 
-    let messageText = msgType === "text" ? commandBody : originalContent;
-    const tempPathsToCleanup = [];
-
-    // 处理图片消息 - 真正的 Vision 能力
-    let imageBase64 = null;
-    let imageMimeType = null;
-
-    if (msgType === "image" && mediaId) {
-      api.logger.info?.(`wecom: downloading image mediaId=${mediaId}`);
-
-      try {
-        // 优先使用 mediaId 下载原图
-        const { buffer, contentType } = await downloadWecomMedia({
-          corpId,
-          corpSecret,
-          mediaId,
-          proxyUrl,
-          logger: api.logger,
-        });
-        imageBase64 = buffer.toString("base64");
-        imageMimeType = contentType || "image/jpeg";
-        messageText = "[用户发送了一张图片]";
-        api.logger.info?.(`wecom: image downloaded, size=${buffer.length} bytes, type=${imageMimeType}`);
-      } catch (downloadErr) {
-        api.logger.warn?.(`wecom: failed to download image via mediaId: ${downloadErr.message}`);
-
-        // 降级：尝试通过 PicUrl 下载
-        if (picUrl) {
-          try {
-            const { buffer, contentType } = await fetchMediaFromUrl(picUrl);
-            imageBase64 = buffer.toString("base64");
-            imageMimeType = contentType || "image/jpeg";
-            messageText = "[用户发送了一张图片]";
-            api.logger.info?.(`wecom: image downloaded via PicUrl, size=${buffer.length} bytes`);
-          } catch (picUrlErr) {
-            api.logger.warn?.(`wecom: failed to download image via PicUrl: ${picUrlErr.message}`);
-            messageText = "[用户发送了一张图片，但下载失败]\n\n请告诉用户图片处理暂时不可用。";
-          }
-        } else {
-          messageText = "[用户发送了一张图片，但下载失败]\n\n请告诉用户图片处理暂时不可用。";
-        }
-      }
+    const inboundResult = await buildInboundContent({
+      api,
+      corpId,
+      corpSecret,
+      agentId,
+      proxyUrl,
+      fromUser,
+      msgType,
+      baseText: msgType === "text" ? commandBody : originalContent,
+      mediaId,
+      picUrl,
+      recognition,
+      fileName,
+      fileSize,
+      linkTitle,
+      linkDescription,
+      linkUrl,
+    });
+    if (inboundResult.aborted) {
+      return;
     }
-
-    // 处理语音消息
-    if (msgType === "voice" && mediaId) {
-      api.logger.info?.(`wecom: received voice message mediaId=${mediaId}`);
-      const recognizedText = String(recognition ?? "").trim();
-      if (recognizedText) {
-        api.logger.info?.(`wecom: voice recognition result from WeCom: ${recognizedText.slice(0, 50)}...`);
-        messageText = `[语音消息转写]\n${recognizedText}`;
-      } else {
-        const voiceConfig = resolveWecomVoiceTranscriptionConfig(api);
-        if (!voiceConfig.enabled) {
-          api.logger.info?.("wecom: voice transcription fallback disabled; asking user to send text");
-          await sendWecomText({
-            corpId,
-            corpSecret,
-            agentId,
-            toUser: fromUser,
-            text: "语音识别未启用，请先开启企业微信语音识别，或直接发送文字消息。",
-            logger: api.logger,
-            proxyUrl,
-          });
-          return;
-        }
-
-        try {
-          const { buffer, contentType } = await downloadWecomMedia({
-            corpId,
-            corpSecret,
-            mediaId,
-            proxyUrl,
-            logger: api.logger,
-          });
-          api.logger.info?.(
-            `wecom: downloaded voice media for transcription, size=${buffer.length}, type=${contentType || "unknown"}`,
-          );
-          const transcript = await transcribeInboundVoice({
-            api,
-            buffer,
-            contentType,
-            mediaId,
-            voiceConfig,
-          });
-          messageText = `[语音消息转写]\n${transcript}`;
-          api.logger.info?.(`wecom: voice transcribed via ${voiceConfig.model}: ${transcript.slice(0, 80)}...`);
-        } catch (voiceErr) {
-          api.logger.warn?.(`wecom: voice transcription failed: ${String(voiceErr?.message || voiceErr)}`);
-          await sendWecomText({
-            corpId,
-            corpSecret,
-            agentId,
-            toUser: fromUser,
-            text:
-              "语音识别失败，请稍后重试。\n" +
-              "如持续失败，请确认本地 whisper 命令可用、模型路径已配置，并已安装 ffmpeg。",
-            logger: api.logger,
-            proxyUrl,
-          });
-          return;
-        }
-      }
-    }
-
-    // 处理视频消息
-    if (msgType === "video" && mediaId) {
-      api.logger.info?.(`wecom: received video message mediaId=${mediaId}`);
-      try {
-        const { buffer, contentType } = await downloadWecomMedia({
-          corpId,
-          corpSecret,
-          mediaId,
-          proxyUrl,
-          logger: api.logger,
-        });
-        const tempDir = join(tmpdir(), WECOM_TEMP_DIR_NAME);
-        await mkdir(tempDir, { recursive: true });
-        const videoTempPath = join(tempDir, `video-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`);
-        await writeFile(videoTempPath, buffer);
-        tempPathsToCleanup.push(videoTempPath);
-        api.logger.info?.(`wecom: saved video to ${videoTempPath}, size=${buffer.length} bytes`);
-        messageText = `[用户发送了一个视频文件，已保存到: ${videoTempPath}]\n\n请告知用户您已收到视频。`;
-      } catch (downloadErr) {
-        api.logger.warn?.(`wecom: failed to download video: ${downloadErr.message}`);
-        messageText = "[用户发送了一个视频，但下载失败]\n\n请告诉用户视频处理暂时不可用。";
-      }
-    }
-
-    // 处理文件消息
-    if (msgType === "file" && mediaId) {
-      api.logger.info?.(`wecom: received file message mediaId=${mediaId}, fileName=${fileName}, size=${fileSize}`);
-      try {
-        const { buffer, contentType } = await downloadWecomMedia({
-          corpId,
-          corpSecret,
-          mediaId,
-          proxyUrl,
-          logger: api.logger,
-        });
-        const ext = fileName ? fileName.split(".").pop() : "bin";
-        const safeFileName = fileName || `file-${Date.now()}.${ext}`;
-        const tempDir = join(tmpdir(), WECOM_TEMP_DIR_NAME);
-        await mkdir(tempDir, { recursive: true });
-        const fileTempPath = join(tempDir, `${Date.now()}-${safeFileName}`);
-        await writeFile(fileTempPath, buffer);
-        tempPathsToCleanup.push(fileTempPath);
-        api.logger.info?.(`wecom: saved file to ${fileTempPath}, size=${buffer.length} bytes`);
-
-        const readableTypes = [".txt", ".md", ".json", ".xml", ".csv", ".log", ".pdf"];
-        const isReadable = readableTypes.some((t) => safeFileName.toLowerCase().endsWith(t));
-
-        if (isReadable) {
-          messageText = `[用户发送了一个文件: ${safeFileName}，已保存到: ${fileTempPath}]\n\n请使用 Read 工具查看这个文件的内容。`;
-        } else {
-          messageText = `[用户发送了一个文件: ${safeFileName}，大小: ${fileSize || buffer.length} 字节，已保存到: ${fileTempPath}]\n\n请告知用户您已收到文件。`;
-        }
-      } catch (downloadErr) {
-        api.logger.warn?.(`wecom: failed to download file: ${downloadErr.message}`);
-        messageText = `[用户发送了一个文件${fileName ? `: ${fileName}` : ""}，但下载失败]\n\n请告诉用户文件处理暂时不可用。`;
-      }
-    }
-
-    // 处理链接分享消息
-    if (msgType === "link") {
-      api.logger.info?.(`wecom: received link message title=${linkTitle}, url=${linkUrl}`);
-      messageText = `[用户分享了一个链接]\n标题: ${linkTitle || '(无标题)'}\n描述: ${linkDescription || '(无描述)'}\n链接: ${linkUrl || '(无链接)'}\n\n请根据链接内容回复用户。如需要，可以使用 WebFetch 工具获取链接内容。`;
-    }
-
+    let messageText = String(inboundResult.messageText ?? "");
+    const tempPathsToCleanup = Array.isArray(inboundResult.tempPathsToCleanup)
+      ? inboundResult.tempPathsToCleanup
+      : [];
     if (!messageText) {
       api.logger.warn?.("wecom: empty message content");
       return;
-    }
-
-    // 如果有图片，保存到临时文件供 AI 读取
-    let imageTempPath = null;
-    if (imageBase64 && imageMimeType) {
-      try {
-        const ext = imageMimeType.includes("png") ? "png" : imageMimeType.includes("gif") ? "gif" : "jpg";
-        const tempDir = join(tmpdir(), WECOM_TEMP_DIR_NAME);
-        await mkdir(tempDir, { recursive: true });
-        imageTempPath = join(tempDir, `image-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`);
-        await writeFile(imageTempPath, Buffer.from(imageBase64, "base64"));
-        tempPathsToCleanup.push(imageTempPath);
-        api.logger.info?.(`wecom: saved image to ${imageTempPath}`);
-        // 更新消息文本，告知 AI 图片位置
-        messageText = `[用户发送了一张图片，已保存到: ${imageTempPath}]\n\n请使用 Read 工具查看这张图片并描述内容。`;
-      } catch (saveErr) {
-        api.logger.warn?.(`wecom: failed to save image: ${saveErr.message}`);
-        messageText = "[用户发送了一张图片，但保存失败]\n\n请告诉用户图片处理暂时不可用。";
-        imageTempPath = null;
-      }
     }
 
     // 获取路由信息

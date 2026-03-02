@@ -59,6 +59,10 @@ function createDeliverer(overrides = {}) {
     sendWecomText: async ({ toUser, text }) => {
       sentMessages.push({ toUser, text });
     },
+    fetchMediaFromUrl: async () => ({
+      buffer: Buffer.from("media"),
+      contentType: "image/png",
+    }),
   };
 
   return {
@@ -115,4 +119,50 @@ test("deliverBotReplyText falls back to agent_push with media links", async () =
   assert.equal(deliverer.sentMessages.length, 1);
   assert.match(deliverer.sentMessages[0].text, /媒体链接/);
   assert.match(deliverer.sentMessages[0].text, /https:\/\/example.com\/a\.png/);
+});
+
+test("deliverBotReplyText sends webhook media when webhook bot enabled", async () => {
+  const webhookCalls = {
+    text: [],
+    image: [],
+  };
+  const deliverer = createDeliverer({
+    resolveWecomDeliveryFallbackPolicy: () => ({
+      enabled: true,
+      order: ["active_stream", "webhook_bot", "agent_push"],
+    }),
+    resolveWecomWebhookBotDeliveryPolicy: () => ({
+      enabled: true,
+      url: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc",
+      key: "",
+      timeoutMs: 8000,
+    }),
+    hasBotStream: () => false,
+    resolveWebhookBotSendUrlFn: () => "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=abc",
+    webhookSendTextFn: async (payload) => {
+      webhookCalls.text.push(payload);
+    },
+    webhookSendImageFn: async (payload) => {
+      webhookCalls.image.push(payload);
+    },
+    webhookSendFileBufferFn: async () => {},
+    fetchMediaFromUrl: async () => ({
+      buffer: Buffer.from("image-binary"),
+      contentType: "image/png",
+    }),
+  });
+
+  const result = await deliverer.deliverBotReplyText({
+    api: createApiMock(),
+    fromUser: "dingxiang",
+    sessionId: "wecom-bot:dingxiang",
+    streamId: "stream-missing",
+    text: "这是结果",
+    mediaUrls: ["https://example.com/a.png"],
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.layer, "webhook_bot");
+  assert.equal(webhookCalls.text.length, 1);
+  assert.equal(webhookCalls.image.length, 1);
 });

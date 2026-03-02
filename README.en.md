@@ -46,7 +46,7 @@ OpenClaw-Wechat is an OpenClaw channel plugin for Enterprise WeChat (WeCom), wit
 | Default callback path | `/wecom/callback` | `/wecom/bot/callback` |
 | Reply mechanism | WeCom send APIs | stream response + refresh polling |
 | Streaming UX | simulated via multiple messages | native stream protocol |
-| Outbound media | full support | currently text-first stream path |
+| Outbound media | full support | image/file supported (`response_url` mixed first, webhook fallback) |
 
 ## 5-Minute Quick Start
 
@@ -161,7 +161,7 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 | Sender ACL | `allowFrom`, `allowFromRejectMessage` |
 | Command ACL | `commands.enabled`, `commands.allowlist`, `commands.rejectMessage` |
 | Admin bypass | `adminUsers` |
-| Group trigger | `groupChat.enabled`, `groupChat.requireMention`, `groupChat.mentionPatterns` |
+| Group trigger | `groupChat.enabled`, `groupChat.triggerMode`, `groupChat.mentionPatterns`, `groupChat.triggerKeywords` |
 | Debounce | `debounce.enabled`, `debounce.windowMs`, `debounce.maxBatch` |
 | Agent streaming | `streaming.enabled`, `streaming.minChars`, `streaming.minIntervalMs` |
 
@@ -183,7 +183,7 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 | Message type | Inbound | Outbound | Notes |
 |---|---|---|---|
 | Text | ✅ | ✅ | native stream |
-| Image | ✅ | ⚠️ | image understanding + text reply |
+| Image | ✅ | ✅ | response_url mixed first; webhook fallback supports image/file |
 | Voice | ✅ | ✅ | transcript-driven text reply |
 | Mixed | ✅ | ✅ | aggregated context |
 | Link/Location | ✅ | ✅ | normalized to text context |
