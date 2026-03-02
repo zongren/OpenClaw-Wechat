@@ -173,7 +173,7 @@ npm install
 ### 方式 B：npm 安装（包发布后）
 
 ```bash
-openclaw plugins install openclaw-wechat
+openclaw plugins install @dingxiang-me/openclaw-wechat
 ```
 
 ## 快速开始

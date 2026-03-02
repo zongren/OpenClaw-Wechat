@@ -120,7 +120,7 @@ Configure plugin load path in `~/.openclaw/openclaw.json`.
 ### npm installation
 
 ```bash
-openclaw plugins install openclaw-wechat
+openclaw plugins install @dingxiang-me/openclaw-wechat
 ```
 
 ## Configuration Reference
