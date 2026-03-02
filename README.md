@@ -89,7 +89,7 @@ npm run wecom:selfcheck -- --all-accounts
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| 企业微信入站消息处理 | ✅ | 文本、图片、语音、链接、文件/视频（Agent） |
+| 企业微信入站消息处理 | ✅ | 文本、图片、语音、链接、文件/视频（Agent + Bot） |
 | AI 自动回复 | ✅ | 接入 OpenClaw Runtime，自动路由 Agent |
 | Bot 原生 stream 协议 | ✅ | `msgtype=stream` 刷新与增量回包 |
 | 多账户 | ✅ | `channels.wecom.accounts.<id>` |
@@ -109,6 +109,8 @@ npm run wecom:selfcheck -- --all-accounts
 | 视频/文件发送（出站） | ✅ | 自动判型上传后发送 |
 | 语音转写（本地） | ✅ | 企业微信 Recognition 优先，缺失时回退本地 whisper |
 | Bot 模式媒体回传 | ✅ | `response_url` 优先 mixed；Webhook Bot fallback 支持 image/file 回传（失败自动降级链接） |
+| Bot 文件入站 | ✅ | 支持 `msgtype=file` 下载并注入会话上下文 |
+| Bot 引用消息上下文 | ✅ | 自动将 `quote` 内容前置到本轮上下文 |
 
 ## 模式对比
 
@@ -371,8 +373,9 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | 类型 | 入站 | 出站 | 备注 |
 |---|---|---|---|
 | 文本 | ✅ | ✅ | 原生 stream |
-| 图片 | ✅ | ⚠️ | 主要用于识别后回文本 |
+| 图片 | ✅ | ✅ | `response_url` mixed + webhook fallback |
 | 语音 | ✅ | ✅ | 以文本结果回传 |
+| 文件 | ✅ | ✅ | Bot 文件入站下载；出站可按 file 回传 |
 | mixed（图文） | ✅ | ✅ | 聚合后回文本 |
 | 链接/位置 | ✅ | ✅ | 转换为文本上下文 |
 

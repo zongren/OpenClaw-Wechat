@@ -27,7 +27,7 @@ OpenClaw-Wechat is an OpenClaw channel plugin for Enterprise WeChat (WeCom), wit
 
 | Feature | Status | Notes |
 |---|---|---|
-| WeCom inbound message handling | ✅ | text/image/voice/link/file/video (Agent) |
+| WeCom inbound message handling | ✅ | text/image/voice/link/file/video (Agent + Bot) |
 | AI auto-reply via OpenClaw runtime | ✅ | routed by session key |
 | Native WeCom Bot stream protocol | ✅ | `msgtype=stream` refresh flow |
 | Multi-account support | ✅ | `channels.wecom.accounts.<id>` |
@@ -185,8 +185,11 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 | Text | ✅ | ✅ | native stream |
 | Image | ✅ | ✅ | response_url mixed first; webhook fallback supports image/file |
 | Voice | ✅ | ✅ | transcript-driven text reply |
+| File | ✅ | ✅ | Bot `msgtype=file` inbound + file outbound fallback |
 | Mixed | ✅ | ✅ | aggregated context |
 | Link/Location | ✅ | ✅ | normalized to text context |
+
+Quoted reply context in Bot mode is also supported (`quote` is prepended into current turn context).
 
 ## Commands and Session Policy
 

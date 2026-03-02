@@ -9,8 +9,9 @@ This channel integrates OpenClaw with WeCom (企业微信) internal apps.
 ## Status
 
 - Webhook verification: supported (requires Token + EncodingAESKey)
-- Inbound messages: text/image/voice/video/file/link
+- Inbound messages: text/image/voice/video/file/link (Bot quote context included)
 - Outbound: Agent mode supports text/image/video/file; Bot mode supports response_url mixed and webhook fallback media
+- Local outbound media path: supported (`/abs/path`, `file://...`, `sandbox:/...`)
 - Multi-account: supported (`channels.wecom.accounts`)
 - Voice recognition: WeCom `Recognition` first; local whisper fallback supported (`channels.wecom.voiceTranscription`)
 - Delivery fallback chain: optional (`active_stream -> response_url -> webhook_bot -> agent_push`)

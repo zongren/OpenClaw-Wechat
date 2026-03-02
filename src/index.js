@@ -1256,8 +1256,62 @@ async function sendWecomFile({ corpId, corpSecret, agentId, toUser, mediaId, log
   });
 }
 
+function resolveLocalMediaPath(mediaUrl) {
+  const raw = String(mediaUrl ?? "").trim();
+  if (!raw) return "";
+  if (/^file:\/\//i.test(raw)) {
+    try {
+      return decodeURIComponent(new URL(raw).pathname || "");
+    } catch {
+      return "";
+    }
+  }
+  if (/^sandbox:/i.test(raw)) {
+    const stripped = raw.replace(/^sandbox:\/{0,2}/i, "");
+    if (!stripped) return "";
+    return stripped.startsWith("/") ? stripped : `/${stripped}`;
+  }
+  if (raw.startsWith("/")) {
+    return raw.split("?")[0].split("#")[0];
+  }
+  return "";
+}
+
+function guessContentTypeByPath(filePath) {
+  const ext = extname(String(filePath ?? "").toLowerCase());
+  if (!ext) return "application/octet-stream";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".png") return "image/png";
+  if (ext === ".gif") return "image/gif";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".bmp") return "image/bmp";
+  if (ext === ".heic") return "image/heic";
+  if (ext === ".heif") return "image/heif";
+  if (ext === ".mp4") return "video/mp4";
+  if (ext === ".mov") return "video/quicktime";
+  if (ext === ".webm") return "video/webm";
+  if (ext === ".mp3") return "audio/mpeg";
+  if (ext === ".wav") return "audio/wav";
+  if (ext === ".amr") return "audio/amr";
+  if (ext === ".ogg") return "audio/ogg";
+  if (ext === ".pdf") return "application/pdf";
+  if (ext === ".txt") return "text/plain; charset=utf-8";
+  return "application/octet-stream";
+}
+
 // 从 URL 下载媒体文件
 async function fetchMediaFromUrl(url, { proxyUrl, logger, forceProxy = false, maxBytes = 10 * 1024 * 1024 } = {}) {
+  const localPath = resolveLocalMediaPath(url);
+  if (localPath) {
+    const buffer = await readFile(localPath);
+    if (buffer.length > maxBytes) {
+      throw new Error(`Media too large (${buffer.length} bytes > ${maxBytes} bytes)`);
+    }
+    const contentType = guessContentTypeByPath(localPath);
+    logger?.info?.(`wecom: loaded local media ${localPath} (${buffer.length} bytes)`);
+    return { buffer, contentType };
+  }
+
   const res = await fetchWithRetry(
     url,
     {
@@ -1382,6 +1436,107 @@ function resolveWecomOutboundMediaTarget({ mediaUrl, mediaType }) {
   return { type: "file", filename: inferredName || "file.bin" };
 }
 
+function normalizeOutboundMediaUrls({ mediaUrl, mediaUrls } = {}) {
+  const dedupe = new Set();
+  const out = [];
+  for (const raw of [mediaUrl, ...(Array.isArray(mediaUrls) ? mediaUrls : [])]) {
+    const url = String(raw ?? "").trim();
+    if (!url || dedupe.has(url)) continue;
+    dedupe.add(url);
+    out.push(url);
+  }
+  return out;
+}
+
+async function sendWecomOutboundMediaBatch({
+  corpId,
+  corpSecret,
+  agentId,
+  toUser,
+  mediaUrl,
+  mediaUrls,
+  mediaType,
+  logger,
+  proxyUrl,
+  maxBytes = 20 * 1024 * 1024,
+} = {}) {
+  const candidates = normalizeOutboundMediaUrls({ mediaUrl, mediaUrls });
+  if (candidates.length === 0) {
+    return { total: 0, sentCount: 0, failed: [] };
+  }
+
+  let sentCount = 0;
+  const failed = [];
+
+  for (const candidate of candidates) {
+    try {
+      const target = resolveWecomOutboundMediaTarget({
+        mediaUrl: candidate,
+        mediaType: candidates.length === 1 ? mediaType : undefined,
+      });
+      const { buffer } = await fetchMediaFromUrl(candidate, {
+        proxyUrl,
+        logger,
+        forceProxy: Boolean(proxyUrl),
+        maxBytes,
+      });
+      const mediaId = await uploadWecomMedia({
+        corpId,
+        corpSecret,
+        type: target.type,
+        buffer,
+        filename: target.filename,
+        logger,
+        proxyUrl,
+      });
+      if (target.type === "image") {
+        await sendWecomImage({
+          corpId,
+          corpSecret,
+          agentId,
+          toUser,
+          mediaId,
+          logger,
+          proxyUrl,
+        });
+      } else if (target.type === "video") {
+        await sendWecomVideo({
+          corpId,
+          corpSecret,
+          agentId,
+          toUser,
+          mediaId,
+          logger,
+          proxyUrl,
+        });
+      } else {
+        await sendWecomFile({
+          corpId,
+          corpSecret,
+          agentId,
+          toUser,
+          mediaId,
+          logger,
+          proxyUrl,
+        });
+      }
+      sentCount += 1;
+    } catch (err) {
+      failed.push({
+        url: candidate,
+        reason: String(err?.message || err),
+      });
+      logger?.warn?.(`wecom: failed to send outbound media ${candidate}: ${String(err?.message || err)}`);
+    }
+  }
+
+  return {
+    total: candidates.length,
+    sentCount,
+    failed,
+  };
+}
+
 const WecomChannelPlugin = {
   id: "wecom",
   meta: {
@@ -1432,7 +1587,7 @@ const WecomChannelPlugin = {
   // 入站消息处理
   inbound: {
     // 当消息需要回复时会调用这个方法
-    deliverReply: async ({ to, text, accountId, mediaUrl, mediaType }) => {
+    deliverReply: async ({ to, text, accountId, mediaUrl, mediaUrls, mediaType }) => {
       const config = getWecomConfig({ config: gatewayRuntime?.config }, accountId);
       if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
         throw new Error("WeCom not configured (check channels.wecom in openclaw.json)");
@@ -1442,53 +1597,19 @@ const WecomChannelPlugin = {
       const userId = to.startsWith("wecom:") ? to.slice(6) : to;
 
       // 如果有媒体附件，先发送媒体
-      if (mediaUrl) {
-        try {
-          const target = resolveWecomOutboundMediaTarget({ mediaUrl, mediaType });
-          const { buffer } = await fetchMediaFromUrl(mediaUrl);
-          const mediaId = await uploadWecomMedia({
-            corpId, corpSecret,
-            type: target.type,
-            buffer,
-            filename: target.filename,
-            logger: gatewayRuntime?.logger,
-            proxyUrl,
-          });
-          if (target.type === "image") {
-            await sendWecomImage({
-              corpId,
-              corpSecret,
-              agentId,
-              toUser: userId,
-              mediaId,
-              logger: gatewayRuntime?.logger,
-              proxyUrl,
-            });
-          } else if (target.type === "video") {
-            await sendWecomVideo({
-              corpId,
-              corpSecret,
-              agentId,
-              toUser: userId,
-              mediaId,
-              logger: gatewayRuntime?.logger,
-              proxyUrl,
-            });
-          } else {
-            await sendWecomFile({
-              corpId,
-              corpSecret,
-              agentId,
-              toUser: userId,
-              mediaId,
-              logger: gatewayRuntime?.logger,
-              proxyUrl,
-            });
-          }
-        } catch (mediaErr) {
-          // 媒体发送失败不阻止文本发送，只记录警告
-          gatewayRuntime?.logger?.warn?.(`wecom: failed to send media: ${mediaErr.message}`);
-        }
+      const mediaResult = await sendWecomOutboundMediaBatch({
+        corpId,
+        corpSecret,
+        agentId,
+        toUser: userId,
+        mediaUrl,
+        mediaUrls,
+        mediaType,
+        logger: gatewayRuntime?.logger,
+        proxyUrl,
+      });
+      if (mediaResult.failed.length > 0) {
+        gatewayRuntime?.logger?.warn?.(`wecom: failed to send ${mediaResult.failed.length} outbound media item(s)`);
       }
 
       // 发送文本消息
@@ -2155,6 +2276,9 @@ function registerWecomBotWebhookRoute(api) {
                     chatId: parsed.chatId,
                     isGroupChat: parsed.isGroupChat,
                     imageUrls: parsed.imageUrls,
+                    fileUrl: parsed.fileUrl,
+                    fileName: parsed.fileName,
+                    quote: parsed.quote,
                     responseUrl: parsed.responseUrl,
                   }),
               }),
@@ -2727,6 +2851,9 @@ async function processBotInboundMessage({
   chatId,
   isGroupChat = false,
   imageUrls = [],
+  fileUrl = "",
+  fileName = "",
+  quote = null,
   responseUrl = "",
 }) {
   const runtime = api.runtime;
@@ -2742,6 +2869,15 @@ async function processBotInboundMessage({
   const tempPathsToCleanup = [];
   const botModeConfig = resolveWecomBotConfig(api);
   const botProxyUrl = resolveWecomBotProxyConfig(api);
+  const normalizedFileUrl = String(fileUrl ?? "").trim();
+  const normalizedFileName = String(fileName ?? "").trim();
+  const normalizedQuote =
+    quote && typeof quote === "object"
+      ? {
+          msgType: String(quote.msgType ?? "").trim().toLowerCase(),
+          content: String(quote.content ?? "").trim(),
+        }
+      : null;
   const normalizedImageUrls = Array.from(
     new Set(
       (Array.isArray(imageUrls) ? imageUrls : [])
@@ -2918,6 +3054,43 @@ async function processBotInboundMessage({
       } else {
         messageText = `${messageText}\n\n[附加说明] 用户还发送了图片，但插件下载失败。`;
       }
+    }
+
+    if (msgType === "file") {
+      const displayName = normalizedFileName || "附件";
+      if (normalizedFileUrl) {
+        try {
+          const tempDir = join(tmpdir(), WECOM_TEMP_DIR_NAME);
+          await mkdir(tempDir, { recursive: true });
+          const { buffer } = await fetchMediaFromUrl(normalizedFileUrl, {
+            proxyUrl: botProxyUrl,
+            logger: api.logger,
+            forceProxy: Boolean(botProxyUrl),
+            maxBytes: 20 * 1024 * 1024,
+          });
+          const safeName = basename(displayName) || `file-${Date.now()}.bin`;
+          const fileTempPath = join(
+            tempDir,
+            `bot-file-${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${safeName}`,
+          );
+          await writeFile(fileTempPath, buffer);
+          tempPathsToCleanup.push(fileTempPath);
+          messageText =
+            `[用户发送了一个文件: ${safeName}，已保存到: ${fileTempPath}]` +
+            "\n\n请根据文件内容回复用户；如需读取详情请使用 Read 工具。";
+          api.logger.info?.(`wecom(bot): saved file to ${fileTempPath}, size=${buffer.length} bytes`);
+        } catch (fileErr) {
+          api.logger.warn?.(`wecom(bot): failed to fetch file url: ${String(fileErr?.message || fileErr)}`);
+          messageText = `[用户发送了一个文件: ${displayName}，但下载失败]\n\n请提示用户重新发送文件。`;
+        }
+      } else if (!messageText) {
+        messageText = `[用户发送了一个文件: ${displayName}]`;
+      }
+    }
+
+    if (normalizedQuote?.content) {
+      const quoteLabel = normalizedQuote.msgType === "image" ? "[引用图片]" : `> ${normalizedQuote.content}`;
+      messageText = `${quoteLabel}\n\n${String(messageText ?? "").trim()}`.trim();
     }
 
     if (!messageText) {
@@ -3734,6 +3907,7 @@ async function processInboundMessage({
               }
               if (info.kind !== "final") return;
               // 发送回复到企业微信
+              let deliveredFinalText = false;
               if (payload.text) {
                 if (isAgentFailureText(payload.text)) {
                   api.logger.warn?.(`wecom: upstream returned failure-like payload: ${payload.text}`);
@@ -3764,38 +3938,69 @@ async function processInboundMessage({
                       });
                     }
                     hasDeliveredReply = true;
+                    deliveredFinalText = true;
                     api.logger.info?.(
                       `wecom: streaming reply completed for ${fromUser}, chunks=${streamChunkSentCount}${tailText ? " +tail" : ""}`,
                     );
-                    return;
                   }
                 }
 
                 // 应用 Markdown 转换
-                const formattedReply = markdownToWecomText(payload.text);
-                await sendWecomText({
+                if (!deliveredFinalText) {
+                  const formattedReply = markdownToWecomText(payload.text);
+                  await sendWecomText({
+                    corpId,
+                    corpSecret,
+                    agentId,
+                    toUser: fromUser,
+                    text: formattedReply,
+                    logger: api.logger,
+                    proxyUrl,
+                  });
+                  hasDeliveredReply = true;
+                  deliveredFinalText = true;
+                  api.logger.info?.(`wecom: sent AI reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
+                }
+              }
+
+              if (payload.mediaUrl || (payload.mediaUrls?.length ?? 0) > 0) {
+                const mediaResult = await sendWecomOutboundMediaBatch({
                   corpId,
                   corpSecret,
                   agentId,
                   toUser: fromUser,
-                  text: formattedReply,
+                  mediaUrl: payload.mediaUrl,
+                  mediaUrls: payload.mediaUrls,
+                  mediaType: payload.mediaType,
                   logger: api.logger,
                   proxyUrl,
                 });
-                hasDeliveredReply = true;
-                api.logger.info?.(`wecom: sent AI reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
-              } else if (payload.mediaUrl || (payload.mediaUrls?.length ?? 0) > 0) {
-                // 当前插件只稳定支持文本回包；若上游仅返回媒体，先给用户明确提示避免无响应。
-                await sendWecomText({
-                  corpId,
-                  corpSecret,
-                  agentId,
-                  toUser: fromUser,
-                  text: "已收到模型返回的媒体结果，但当前版本暂不支持直接回传该媒体，请稍后重试文本请求。",
-                  logger: api.logger,
-                  proxyUrl,
-                });
-                hasDeliveredReply = true;
+                if (mediaResult.sentCount > 0) {
+                  hasDeliveredReply = true;
+                }
+                if (mediaResult.failed.length > 0 && mediaResult.sentCount > 0) {
+                  await sendWecomText({
+                    corpId,
+                    corpSecret,
+                    agentId,
+                    toUser: fromUser,
+                    text: `已回传 ${mediaResult.sentCount} 个媒体，另有 ${mediaResult.failed.length} 个失败。`,
+                    logger: api.logger,
+                    proxyUrl,
+                  });
+                }
+                if (mediaResult.sentCount === 0 && !deliveredFinalText) {
+                  await sendWecomText({
+                    corpId,
+                    corpSecret,
+                    agentId,
+                    toUser: fromUser,
+                    text: "已收到模型返回的媒体结果，但媒体回传失败，请稍后重试。",
+                    logger: api.logger,
+                    proxyUrl,
+                  });
+                  hasDeliveredReply = true;
+                }
               }
             },
             onError: async (err, info) => {

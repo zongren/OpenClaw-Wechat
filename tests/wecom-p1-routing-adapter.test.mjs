@@ -178,6 +178,40 @@ test("parseWecomBotInboundMessage parses mixed text and image url", () => {
   assert.deepEqual(parsed.imageUrls, ["https://example.com/a.png"]);
 });
 
+test("parseWecomBotInboundMessage parses file payload", () => {
+  const parsed = parseWecomBotInboundMessage({
+    msgtype: "file",
+    msgid: "f1",
+    from: { userid: "dingxiang" },
+    file: {
+      url: "https://example.com/demo.pdf",
+      name: "demo.pdf",
+    },
+  });
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.msgType, "file");
+  assert.equal(parsed.fileUrl, "https://example.com/demo.pdf");
+  assert.equal(parsed.fileName, "demo.pdf");
+  assert.match(parsed.content, /\[文件\]/);
+});
+
+test("parseWecomBotInboundMessage parses quote metadata", () => {
+  const parsed = parseWecomBotInboundMessage({
+    msgtype: "text",
+    msgid: "q1",
+    from: { userid: "dingxiang" },
+    text: { content: "新消息" },
+    quote: {
+      msgtype: "text",
+      text: { content: "被引用消息" },
+    },
+  });
+  assert.equal(parsed.kind, "message");
+  assert.equal(parsed.msgType, "text");
+  assert.equal(parsed.quote?.msgType, "text");
+  assert.equal(parsed.quote?.content, "被引用消息");
+});
+
 test("extractWecomXmlInboundEnvelope normalizes fields", () => {
   const envelope = extractWecomXmlInboundEnvelope({
     MsgType: "text",

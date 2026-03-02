@@ -6,6 +6,27 @@ function normalizeLowerToken(value) {
   return normalizeToken(value).toLowerCase();
 }
 
+function normalizeQuotePayload(quotePayload) {
+  if (!quotePayload || typeof quotePayload !== "object") return null;
+  const msgType = normalizeLowerToken(quotePayload.msgtype);
+  if (!msgType) return null;
+  let content = "";
+  if (msgType === "text") {
+    content = normalizeToken(quotePayload?.text?.content);
+  } else if (msgType === "image") {
+    content = normalizeToken(quotePayload?.image?.url) || "[图片]";
+  } else if (msgType === "file") {
+    content = normalizeToken(quotePayload?.file?.name || quotePayload?.file?.filename || quotePayload?.file?.url);
+  } else if (msgType === "link") {
+    content = normalizeToken(quotePayload?.link?.title || quotePayload?.link?.url);
+  }
+  if (!content) return null;
+  return {
+    msgType,
+    content,
+  };
+}
+
 function dedupeUrlList(urls) {
   const dedupe = new Set();
   const out = [];
@@ -86,8 +107,11 @@ export function parseWecomBotInboundMessage(payload) {
   const chatType = normalizeLowerToken(payload.chattype || "single") || "single";
   const chatId = normalizeToken(payload.chatid);
   const responseUrl = normalizeToken(payload.response_url);
+  const quote = normalizeQuotePayload(payload.quote);
   let content = "";
   const imageUrls = [];
+  let fileUrl = "";
+  let fileName = "";
 
   if (msgType === "text") {
     content = normalizeToken(payload?.text?.content);
@@ -123,6 +147,11 @@ export function parseWecomBotInboundMessage(payload) {
       }
     }
     content = parts.join("\n").trim();
+  } else if (msgType === "file") {
+    fileUrl = normalizeToken(payload?.file?.url);
+    fileName = normalizeToken(payload?.file?.name || payload?.file?.filename);
+    const displayName = fileName || fileUrl || "附件";
+    content = `[文件] ${displayName}`;
   } else if (msgType === "event") {
     return {
       kind: "event",
@@ -157,6 +186,9 @@ export function parseWecomBotInboundMessage(payload) {
     responseUrl,
     content,
     imageUrls: dedupeUrlList(imageUrls),
+    fileUrl,
+    fileName,
+    quote,
     isGroupChat: chatType === "group" || Boolean(chatId),
   };
 }
