@@ -1,6 +1,7 @@
 import { createWecomLateReplyWatcher } from "./agent-late-reply-watcher.js";
 import { buildWecomBotInboundContextPayload, buildWecomBotInboundEnvelopePayload } from "./bot-context.js";
 import { createWecomBotDispatchHandlers } from "./bot-dispatch-handlers.js";
+import { applyWecomBotCommandAndSenderGuard, applyWecomBotGroupChatGuard } from "./bot-inbound-guards.js";
 import {
   createWecomBotDispatchState,
   createWecomBotLateReplyRuntime,
@@ -120,6 +121,7 @@ async function processBotInboundMessage({
   );
   const groupChatPolicy = resolveWecomGroupChatPolicy(api);
   const dynamicAgentPolicy = resolveWecomDynamicAgentPolicy(api);
+  let isAdminUser = false;
 
   const safeFinishStream = (text) => {
     if (!hasBotStream(streamId)) return;
@@ -155,61 +157,39 @@ async function processBotInboundMessage({
   let readTranscriptFallbackResult = async () => ({ text: "", transcriptMessageId: "" });
 
   try {
-    if (isGroupChat && msgType === "text") {
-      if (!groupChatPolicy.enabled) {
-        safeFinishStream("当前群聊消息处理未启用。");
-        return;
-      }
-      if (!shouldTriggerWecomGroupResponse(commandBody, groupChatPolicy)) {
-        const hint =
-          groupChatPolicy.triggerMode === "mention"
-            ? "请先 @ 机器人后再发送消息。"
-            : groupChatPolicy.triggerMode === "keyword"
-              ? "当前消息未命中群聊触发关键词。"
-              : "当前消息不满足群聊触发条件。";
-        safeFinishStream(hint);
-        return;
-      }
-      if (shouldStripWecomGroupMentions(groupChatPolicy)) {
-        commandBody = stripWecomGroupMentions(commandBody, groupChatPolicy.mentionPatterns);
-      }
-    }
-
-    const commandPolicy = resolveWecomCommandPolicy(api);
-    const isAdminUser = commandPolicy.adminUsers.includes(normalizedFromUser);
-    const allowFromPolicy = resolveWecomAllowFromPolicy(api, "default", {});
-    const senderAllowed = isAdminUser || isWecomSenderAllowed({
-      senderId: normalizedFromUser,
-      allowFrom: allowFromPolicy.allowFrom,
+    const groupGuardResult = applyWecomBotGroupChatGuard({
+      isGroupChat,
+      msgType,
+      commandBody,
+      groupChatPolicy,
+      shouldTriggerWecomGroupResponse,
+      shouldStripWecomGroupMentions,
+      stripWecomGroupMentions,
     });
-    if (!senderAllowed) {
-      safeFinishStream(allowFromPolicy.rejectMessage || "当前账号未授权，请联系管理员。");
+    if (!groupGuardResult.ok) {
+      safeFinishStream(groupGuardResult.finishText);
       return;
     }
+    commandBody = groupGuardResult.commandBody;
 
-    if (msgType === "text") {
-      let commandKey = extractLeadingSlashCommand(commandBody);
-      if (commandKey === "/clear") {
-        commandBody = commandBody.replace(/^\/clear\b/i, "/reset");
-        commandKey = "/reset";
-      }
-      if (commandKey) {
-        const commandAllowed =
-          commandPolicy.allowlist.includes(commandKey) ||
-          (commandKey === "/reset" && commandPolicy.allowlist.includes("/clear"));
-        if (commandPolicy.enabled && !isAdminUser && !commandAllowed) {
-          safeFinishStream(commandPolicy.rejectMessage);
-          return;
-        }
-        if (commandKey === "/help") {
-          safeFinishStream(buildWecomBotHelpText());
-          return;
-        }
-        if (commandKey === "/status") {
-          safeFinishStream(buildWecomBotStatusText(api, fromUser));
-          return;
-        }
-      }
+    const commandGuardResult = applyWecomBotCommandAndSenderGuard({
+      api,
+      fromUser,
+      msgType,
+      commandBody,
+      normalizedFromUser,
+      resolveWecomCommandPolicy,
+      resolveWecomAllowFromPolicy,
+      isWecomSenderAllowed,
+      extractLeadingSlashCommand,
+      buildWecomBotHelpText,
+      buildWecomBotStatusText,
+    });
+    isAdminUser = commandGuardResult.isAdminUser === true;
+    commandBody = commandGuardResult.commandBody;
+    if (!commandGuardResult.ok) {
+      safeFinishStream(commandGuardResult.finishText);
+      return;
     }
 
     const inboundContentResult = await buildBotInboundContent({
