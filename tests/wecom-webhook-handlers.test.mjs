@@ -100,5 +100,16 @@ test("agent webhook handler health reflects signed account availability", async 
     assert.equal(res.statusCode, 500);
     assert.equal(getBody(), "wecom webhook not configured");
   }
-});
 
+  {
+    const { res, getBody } = createResponseMock();
+    const handler = createWecomAgentWebhookHandler({
+      api: { logger: {} },
+      accounts: undefined,
+      ...baseDeps,
+    });
+    await handler({ method: "GET", url: "/wecom/callback" }, res);
+    assert.equal(res.statusCode, 500);
+    assert.equal(getBody(), "wecom webhook not configured");
+  }
+});

@@ -1,3 +1,5 @@
+import { createWecomAgentInboundDispatcher } from "./agent-inbound-dispatch.js";
+
 export function createWecomAgentWebhookHandler({
   api,
   accounts,
@@ -13,6 +15,15 @@ export function createWecomAgentWebhookHandler({
   executeInboundTaskWithSessionQueue,
   processInboundMessage,
 } = {}) {
+  const dispatchInbound = createWecomAgentInboundDispatcher({
+    api,
+    buildWecomSessionId,
+    scheduleTextInboundProcessing,
+    messageProcessLimiter,
+    executeInboundTaskWithSessionQueue,
+    processInboundMessage,
+  });
+
   return async (req, res) => {
     try {
       const url = new URL(req.url ?? "/", "http://localhost");
@@ -20,7 +31,7 @@ export function createWecomAgentWebhookHandler({
       const timestamp = url.searchParams.get("timestamp") ?? "";
       const nonce = url.searchParams.get("nonce") ?? "";
       const echostr = url.searchParams.get("echostr") ?? "";
-      const signedAccounts = accounts.filter((a) => a.callbackToken && a.callbackAesKey);
+      const signedAccounts = (Array.isArray(accounts) ? accounts : []).filter((a) => a.callbackToken && a.callbackAesKey);
 
       if (req.method === "GET" && !echostr) {
         res.statusCode = signedAccounts.length > 0 ? 200 : 500;
@@ -153,109 +164,11 @@ export function createWecomAgentWebhookHandler({
         isGroupChat,
         msgId,
       };
-      const inboundSessionId = buildWecomSessionId(fromUser);
-
-      if (msgType === "text" && inbound.content) {
-        scheduleTextInboundProcessing(api, basePayload, inbound.content);
-      } else if (msgType === "image" && inbound.mediaId) {
-        messageProcessLimiter
-          .execute(() =>
-            executeInboundTaskWithSessionQueue({
-              api,
-              sessionId: inboundSessionId,
-              isBot: false,
-              task: () =>
-                processInboundMessage({
-                  ...basePayload,
-                  mediaId: inbound.mediaId,
-                  msgType: "image",
-                  picUrl: inbound.picUrl,
-                }),
-            }),
-          )
-          .catch((err) => {
-            api.logger.error?.(`wecom: async image processing failed: ${err.message}`);
-          });
-      } else if (msgType === "voice" && inbound.mediaId) {
-        messageProcessLimiter
-          .execute(() =>
-            executeInboundTaskWithSessionQueue({
-              api,
-              sessionId: inboundSessionId,
-              isBot: false,
-              task: () =>
-                processInboundMessage({
-                  ...basePayload,
-                  mediaId: inbound.mediaId,
-                  msgType: "voice",
-                  recognition: inbound.recognition,
-                }),
-            }),
-          )
-          .catch((err) => {
-            api.logger.error?.(`wecom: async voice processing failed: ${err.message}`);
-          });
-      } else if (msgType === "video" && inbound.mediaId) {
-        messageProcessLimiter
-          .execute(() =>
-            executeInboundTaskWithSessionQueue({
-              api,
-              sessionId: inboundSessionId,
-              isBot: false,
-              task: () =>
-                processInboundMessage({
-                  ...basePayload,
-                  mediaId: inbound.mediaId,
-                  msgType: "video",
-                  thumbMediaId: inbound.thumbMediaId,
-                }),
-            }),
-          )
-          .catch((err) => {
-            api.logger.error?.(`wecom: async video processing failed: ${err.message}`);
-          });
-      } else if (msgType === "file" && inbound.mediaId) {
-        messageProcessLimiter
-          .execute(() =>
-            executeInboundTaskWithSessionQueue({
-              api,
-              sessionId: inboundSessionId,
-              isBot: false,
-              task: () =>
-                processInboundMessage({
-                  ...basePayload,
-                  mediaId: inbound.mediaId,
-                  msgType: "file",
-                  fileName: inbound.fileName,
-                  fileSize: inbound.fileSize,
-                }),
-            }),
-          )
-          .catch((err) => {
-            api.logger.error?.(`wecom: async file processing failed: ${err.message}`);
-          });
-      } else if (msgType === "link") {
-        messageProcessLimiter
-          .execute(() =>
-            executeInboundTaskWithSessionQueue({
-              api,
-              sessionId: inboundSessionId,
-              isBot: false,
-              task: () =>
-                processInboundMessage({
-                  ...basePayload,
-                  msgType: "link",
-                  linkTitle: inbound.linkTitle,
-                  linkDescription: inbound.linkDescription,
-                  linkUrl: inbound.linkUrl,
-                  linkPicUrl: inbound.linkPicUrl,
-                }),
-            }),
-          )
-          .catch((err) => {
-            api.logger.error?.(`wecom: async link processing failed: ${err.message}`);
-          });
-      } else {
+      const handled = dispatchInbound({
+        inbound,
+        basePayload,
+      });
+      if (!handled) {
         api.logger.info?.(`wecom: ignoring unsupported message type=${msgType}`);
       }
     } catch (err) {
@@ -268,4 +181,3 @@ export function createWecomAgentWebhookHandler({
     }
   };
 }
-
