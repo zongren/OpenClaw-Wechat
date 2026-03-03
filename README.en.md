@@ -352,3 +352,7 @@ And verify WeCom-side prerequisites:
 3. Logs contain inbound `chatId=...`; otherwise WeCom is not pushing group messages to this callback.
 
 If your WeCom admin console only allows adding a webhook bot (not a self-built app) into regular groups, that is a WeCom-side product limitation rather than a plugin setting issue.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=dingxiang-me/OpenClaw-Wechat&type=Date)](https://star-history.com/#dingxiang-me/OpenClaw-Wechat&Date)

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-03-03
+
+### Added
+- 新增 Agent 入站分发器模块：`src/wecom/agent-inbound-dispatch.js`
+- 新增 Agent 入站分发单测：`tests/wecom-agent-inbound-dispatch.test.mjs`
+- README / README.en 底部新增 Star History 区块
+
+### Changed
+- `agent-webhook-handler` 改为复用入站分发器，去除重复的异步任务分发分支
+- 版本号由 `0.5.x` 直接提升为 `1.3.3`
+
+### Fixed
+- `accounts` 缺失或非数组时，Agent webhook 健康检查稳定返回 `wecom webhook not configured`，不再走异常路径
+
 ## [0.5.4] - 2026-03-03
 
 ### Added

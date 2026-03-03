@@ -579,3 +579,7 @@ npm run wecom:bot:selfcheck
 - 许可证：MIT
 
 欢迎提交 Issue / PR。
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=dingxiang-me/OpenClaw-Wechat&type=Date)](https://star-history.com/#dingxiang-me/OpenClaw-Wechat&Date)
