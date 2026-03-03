@@ -1,165 +1,95 @@
 import { buildWecomBotInboundContextPayload, buildWecomBotInboundEnvelopePayload } from "./bot-context.js";
-import { handleWecomBotDispatchError, handleWecomBotPostDispatchFallback } from "./bot-dispatch-fallback.js";
-import { createWecomBotDispatchHandlers } from "./bot-dispatch-handlers.js";
-import { applyWecomBotCommandAndSenderGuard, applyWecomBotGroupChatGuard } from "./bot-inbound-guards.js";
+import { handleWecomBotDispatchError } from "./bot-dispatch-fallback.js";
 import {
-  createWecomBotDispatchState,
-  createWecomBotLateReplyRuntime,
-  resolveWecomBotReplyRuntimePolicy,
-} from "./bot-reply-runtime.js";
+  assertWecomBotInboundFlowDeps,
+  createWecomBotInboundFlowState,
+  createWecomBotSafeReplyHelpers,
+} from "./bot-inbound-executor-helpers.js";
+import { executeWecomBotDispatchRuntime } from "./bot-inbound-dispatch-runtime.js";
+import { applyWecomBotCommandAndSenderGuard, applyWecomBotGroupChatGuard } from "./bot-inbound-guards.js";
 import { prepareWecomBotRuntimeContext } from "./bot-runtime-context.js";
 
-function assertFunction(name, value) {
-  if (typeof value !== "function") {
-    throw new Error(`executeWecomBotInboundFlow: ${name} is required`);
-  }
-}
+export async function executeWecomBotInboundFlow(payload = {}) {
+  const {
+    api,
+    streamId,
+    fromUser,
+    content,
+    msgType = "text",
+    msgId,
+    chatId,
+    isGroupChat = false,
+    imageUrls = [],
+    fileUrl = "",
+    fileName = "",
+    quote = null,
+    responseUrl = "",
+    buildWecomBotSessionId,
+    resolveWecomBotConfig,
+    resolveWecomBotProxyConfig,
+    normalizeWecomBotOutboundMediaUrls,
+    resolveWecomGroupChatPolicy,
+    resolveWecomDynamicAgentPolicy,
+    hasBotStream,
+    finishBotStream,
+    deliverBotReplyText,
+    shouldTriggerWecomGroupResponse,
+    shouldStripWecomGroupMentions,
+    stripWecomGroupMentions,
+    resolveWecomCommandPolicy,
+    resolveWecomAllowFromPolicy,
+    isWecomSenderAllowed,
+    extractLeadingSlashCommand,
+    buildWecomBotHelpText,
+    buildWecomBotStatusText,
+    buildBotInboundContent,
+    resolveWecomAgentRoute,
+    seedDynamicAgentWorkspace,
+    markTranscriptReplyDelivered,
+    markdownToWecomText,
+    withTimeout,
+    isDispatchTimeoutError,
+    queueBotStreamMedia,
+    updateBotStream,
+    isAgentFailureText,
+    scheduleTempFileCleanup,
+    ACTIVE_LATE_REPLY_WATCHERS,
+    ensureLateReplyWatcherRunner,
+    ensureTranscriptFallbackReader,
+  } = payload;
 
-export async function executeWecomBotInboundFlow({
-  api,
-  streamId,
-  fromUser,
-  content,
-  msgType = "text",
-  msgId,
-  chatId,
-  isGroupChat = false,
-  imageUrls = [],
-  fileUrl = "",
-  fileName = "",
-  quote = null,
-  responseUrl = "",
-  buildWecomBotSessionId,
-  resolveWecomBotConfig,
-  resolveWecomBotProxyConfig,
-  normalizeWecomBotOutboundMediaUrls,
-  resolveWecomGroupChatPolicy,
-  resolveWecomDynamicAgentPolicy,
-  hasBotStream,
-  finishBotStream,
-  deliverBotReplyText,
-  shouldTriggerWecomGroupResponse,
-  shouldStripWecomGroupMentions,
-  stripWecomGroupMentions,
-  resolveWecomCommandPolicy,
-  resolveWecomAllowFromPolicy,
-  isWecomSenderAllowed,
-  extractLeadingSlashCommand,
-  buildWecomBotHelpText,
-  buildWecomBotStatusText,
-  buildBotInboundContent,
-  resolveWecomAgentRoute,
-  seedDynamicAgentWorkspace,
-  markTranscriptReplyDelivered,
-  markdownToWecomText,
-  withTimeout,
-  isDispatchTimeoutError,
-  queueBotStreamMedia,
-  updateBotStream,
-  isAgentFailureText,
-  scheduleTempFileCleanup,
-  ACTIVE_LATE_REPLY_WATCHERS,
-  ensureLateReplyWatcherRunner,
-  ensureTranscriptFallbackReader,
-} = {}) {
-  if (!api || typeof api !== "object") {
-    throw new Error("executeWecomBotInboundFlow: api is required");
-  }
-  assertFunction("buildWecomBotSessionId", buildWecomBotSessionId);
-  assertFunction("resolveWecomBotConfig", resolveWecomBotConfig);
-  assertFunction("resolveWecomBotProxyConfig", resolveWecomBotProxyConfig);
-  assertFunction("normalizeWecomBotOutboundMediaUrls", normalizeWecomBotOutboundMediaUrls);
-  assertFunction("resolveWecomGroupChatPolicy", resolveWecomGroupChatPolicy);
-  assertFunction("resolveWecomDynamicAgentPolicy", resolveWecomDynamicAgentPolicy);
-  assertFunction("hasBotStream", hasBotStream);
-  assertFunction("finishBotStream", finishBotStream);
-  assertFunction("deliverBotReplyText", deliverBotReplyText);
-  assertFunction("shouldTriggerWecomGroupResponse", shouldTriggerWecomGroupResponse);
-  assertFunction("shouldStripWecomGroupMentions", shouldStripWecomGroupMentions);
-  assertFunction("stripWecomGroupMentions", stripWecomGroupMentions);
-  assertFunction("resolveWecomCommandPolicy", resolveWecomCommandPolicy);
-  assertFunction("resolveWecomAllowFromPolicy", resolveWecomAllowFromPolicy);
-  assertFunction("isWecomSenderAllowed", isWecomSenderAllowed);
-  assertFunction("extractLeadingSlashCommand", extractLeadingSlashCommand);
-  assertFunction("buildWecomBotHelpText", buildWecomBotHelpText);
-  assertFunction("buildWecomBotStatusText", buildWecomBotStatusText);
-  assertFunction("buildBotInboundContent", buildBotInboundContent);
-  assertFunction("resolveWecomAgentRoute", resolveWecomAgentRoute);
-  assertFunction("seedDynamicAgentWorkspace", seedDynamicAgentWorkspace);
-  assertFunction("markTranscriptReplyDelivered", markTranscriptReplyDelivered);
-  assertFunction("markdownToWecomText", markdownToWecomText);
-  assertFunction("withTimeout", withTimeout);
-  assertFunction("isDispatchTimeoutError", isDispatchTimeoutError);
-  assertFunction("queueBotStreamMedia", queueBotStreamMedia);
-  assertFunction("updateBotStream", updateBotStream);
-  assertFunction("isAgentFailureText", isAgentFailureText);
-  assertFunction("scheduleTempFileCleanup", scheduleTempFileCleanup);
-  assertFunction("ensureLateReplyWatcherRunner", ensureLateReplyWatcherRunner);
-  assertFunction("ensureTranscriptFallbackReader", ensureTranscriptFallbackReader);
+  assertWecomBotInboundFlowDeps({
+    ...payload,
+    api,
+  });
 
-  const runtime = api.runtime;
-  const cfg = api.config;
-  const baseSessionId = buildWecomBotSessionId(fromUser);
-  let sessionId = baseSessionId;
-  let routedAgentId = "";
-  const fromAddress = `wecom-bot:${fromUser}`;
-  const normalizedFromUser = String(fromUser ?? "").trim().toLowerCase();
-  const originalContent = String(content ?? "");
-  let commandBody = originalContent;
-  const dispatchStartedAt = Date.now();
-  const tempPathsToCleanup = [];
-  const botModeConfig = resolveWecomBotConfig(api);
-  const botProxyUrl = resolveWecomBotProxyConfig(api);
-  const normalizedFileUrl = String(fileUrl ?? "").trim();
-  const normalizedFileName = String(fileName ?? "").trim();
-  const normalizedQuote =
-    quote && typeof quote === "object"
-      ? {
-          msgType: String(quote.msgType ?? "").trim().toLowerCase(),
-          content: String(quote.content ?? "").trim(),
-        }
-      : null;
-  const normalizedImageUrls = Array.from(
-    new Set(
-      (Array.isArray(imageUrls) ? imageUrls : [])
-        .map((item) => String(item ?? "").trim())
-        .filter(Boolean),
-    ),
-  );
-  const groupChatPolicy = resolveWecomGroupChatPolicy(api);
-  const dynamicAgentPolicy = resolveWecomDynamicAgentPolicy(api);
-  let isAdminUser = false;
+  const state = createWecomBotInboundFlowState({
+    api,
+    fromUser,
+    content,
+    imageUrls,
+    fileUrl,
+    fileName,
+    quote,
+    buildWecomBotSessionId,
+    resolveWecomBotConfig,
+    resolveWecomBotProxyConfig,
+    resolveWecomGroupChatPolicy,
+    resolveWecomDynamicAgentPolicy,
+  });
+  const { runtime, cfg } = state;
+  const { safeFinishStream, safeDeliverReply } = createWecomBotSafeReplyHelpers({
+    api,
+    fromUser,
+    streamId,
+    responseUrl,
+    state,
+    hasBotStream,
+    finishBotStream,
+    normalizeWecomBotOutboundMediaUrls,
+    deliverBotReplyText,
+  });
 
-  const safeFinishStream = (text) => {
-    if (!hasBotStream(streamId)) return;
-    finishBotStream(streamId, String(text ?? ""));
-  };
-  const safeDeliverReply = async (reply, reason = "reply") => {
-    const normalizedReply =
-      typeof reply === "string"
-        ? { text: reply }
-        : reply && typeof reply === "object"
-          ? reply
-          : { text: "" };
-    const contentText = String(normalizedReply.text ?? "").trim();
-    const replyMediaUrls = normalizeWecomBotOutboundMediaUrls(normalizedReply);
-    if (!contentText && replyMediaUrls.length === 0) return false;
-    const result = await deliverBotReplyText({
-      api,
-      fromUser,
-      sessionId,
-      streamId,
-      responseUrl,
-      text: contentText,
-      mediaUrls: replyMediaUrls,
-      mediaType: String(normalizedReply.mediaType ?? "").trim().toLowerCase() || undefined,
-      reason,
-    });
-    if (!result?.ok && hasBotStream(streamId)) {
-      finishBotStream(streamId, contentText || "已收到模型返回的媒体结果，请稍后刷新。");
-    }
-    return result?.ok === true;
-  };
   let startLateReplyWatcher = () => false;
   let readTranscriptFallbackResult = async () => ({ text: "", transcriptMessageId: "" });
 
@@ -167,8 +97,8 @@ export async function executeWecomBotInboundFlow({
     const groupGuardResult = applyWecomBotGroupChatGuard({
       isGroupChat,
       msgType,
-      commandBody,
-      groupChatPolicy,
+      commandBody: state.commandBody,
+      groupChatPolicy: state.groupChatPolicy,
       shouldTriggerWecomGroupResponse,
       shouldStripWecomGroupMentions,
       stripWecomGroupMentions,
@@ -177,14 +107,14 @@ export async function executeWecomBotInboundFlow({
       safeFinishStream(groupGuardResult.finishText);
       return;
     }
-    commandBody = groupGuardResult.commandBody;
+    state.commandBody = groupGuardResult.commandBody;
 
     const commandGuardResult = applyWecomBotCommandAndSenderGuard({
       api,
       fromUser,
       msgType,
-      commandBody,
-      normalizedFromUser,
+      commandBody: state.commandBody,
+      normalizedFromUser: state.normalizedFromUser,
       resolveWecomCommandPolicy,
       resolveWecomAllowFromPolicy,
       isWecomSenderAllowed,
@@ -192,8 +122,8 @@ export async function executeWecomBotInboundFlow({
       buildWecomBotHelpText,
       buildWecomBotStatusText,
     });
-    isAdminUser = commandGuardResult.isAdminUser === true;
-    commandBody = commandGuardResult.commandBody;
+    state.isAdminUser = commandGuardResult.isAdminUser === true;
+    state.commandBody = commandGuardResult.commandBody;
     if (!commandGuardResult.ok) {
       safeFinishStream(commandGuardResult.finishText);
       return;
@@ -201,17 +131,17 @@ export async function executeWecomBotInboundFlow({
 
     const inboundContentResult = await buildBotInboundContent({
       api,
-      botModeConfig,
-      botProxyUrl,
+      botModeConfig: state.botModeConfig,
+      botProxyUrl: state.botProxyUrl,
       msgType,
-      commandBody,
-      normalizedImageUrls,
-      normalizedFileUrl,
-      normalizedFileName,
-      normalizedQuote,
+      commandBody: state.commandBody,
+      normalizedImageUrls: state.normalizedImageUrls,
+      normalizedFileUrl: state.normalizedFileUrl,
+      normalizedFileName: state.normalizedFileName,
+      normalizedQuote: state.normalizedQuote,
     });
     if (Array.isArray(inboundContentResult.tempPathsToCleanup)) {
-      tempPathsToCleanup.push(...inboundContentResult.tempPathsToCleanup);
+      state.tempPathsToCleanup.push(...inboundContentResult.tempPathsToCleanup);
     }
     if (inboundContentResult.aborted) {
       safeFinishStream(inboundContentResult.abortText || "消息处理失败，请稍后重试。");
@@ -227,58 +157,42 @@ export async function executeWecomBotInboundFlow({
       api,
       runtime,
       cfg,
-      baseSessionId,
+      baseSessionId: state.baseSessionId,
       fromUser,
       chatId,
       isGroupChat,
       msgId,
       messageText,
-      commandBody,
-      originalContent,
-      fromAddress,
-      groupChatPolicy,
-      dynamicAgentPolicy,
-      isAdminUser,
+      commandBody: state.commandBody,
+      originalContent: state.originalContent,
+      fromAddress: state.fromAddress,
+      groupChatPolicy: state.groupChatPolicy,
+      dynamicAgentPolicy: state.dynamicAgentPolicy,
+      isAdminUser: state.isAdminUser,
       resolveWecomAgentRoute,
       seedDynamicAgentWorkspace,
       buildWecomBotInboundEnvelopePayload,
       buildWecomBotInboundContextPayload,
     });
-    routedAgentId = runtimeContext.routedAgentId;
-    sessionId = runtimeContext.sessionId;
+    state.routedAgentId = runtimeContext.routedAgentId;
+    state.sessionId = runtimeContext.sessionId;
     const storePath = runtimeContext.storePath;
     const ctxPayload = runtimeContext.ctxPayload;
     const sessionRuntimeId = runtimeContext.sessionRuntimeId;
 
-    const dispatchState = createWecomBotDispatchState();
-    const replyRuntimePolicy = resolveWecomBotReplyRuntimePolicy({ botModeConfig });
-    const readTranscriptFallback = ensureTranscriptFallbackReader();
-    assertFunction("readTranscriptFallback", readTranscriptFallback);
-    const runLateReplyWatcher = ensureLateReplyWatcherRunner();
-    assertFunction("runLateReplyWatcher", runLateReplyWatcher);
-    const lateReplyRuntime = createWecomBotLateReplyRuntime({
-      logger: api.logger,
-      sessionId,
+    const dispatchResult = await executeWecomBotDispatchRuntime({
+      api,
+      runtime,
+      cfg,
+      ctxPayload,
+      streamId,
+      sessionId: state.sessionId,
+      routedAgentId: state.routedAgentId,
+      storePath,
       sessionRuntimeId,
       msgId,
-      storePath,
-      dispatchState,
-      dispatchStartedAt,
-      lateReplyWatchMs: replyRuntimePolicy.lateReplyWatchMs,
-      lateReplyPollMs: replyRuntimePolicy.lateReplyPollMs,
-      readTranscriptFallback,
-      markTranscriptReplyDelivered,
-      safeDeliverReply,
-      runLateReplyWatcher,
-      activeWatchers: ACTIVE_LATE_REPLY_WATCHERS,
-    });
-    readTranscriptFallbackResult = lateReplyRuntime.readTranscriptFallbackResult;
-    const tryFinishFromTranscript = lateReplyRuntime.tryFinishFromTranscript;
-    startLateReplyWatcher = lateReplyRuntime.startLateReplyWatcher;
-    const dispatchHandlers = createWecomBotDispatchHandlers({
-      api,
-      streamId,
-      state: dispatchState,
+      dispatchStartedAt: state.dispatchStartedAt,
+      botModeConfig: state.botModeConfig,
       hasBotStream,
       normalizeWecomBotOutboundMediaUrls,
       queueBotStreamMedia,
@@ -286,63 +200,35 @@ export async function executeWecomBotInboundFlow({
       markdownToWecomText,
       isAgentFailureText,
       safeDeliverReply,
+      markTranscriptReplyDelivered,
+      ACTIVE_LATE_REPLY_WATCHERS,
+      ensureTranscriptFallbackReader,
+      ensureLateReplyWatcherRunner,
+      withTimeout,
     });
-
-    await withTimeout(
-      runtime.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
-        ctx: ctxPayload,
-        cfg,
-        replyOptions: {
-          disableBlockStreaming: false,
-          routeOverrides:
-            routedAgentId && sessionId
-              ? {
-                  sessionKey: sessionId,
-                  agentId: routedAgentId,
-                  accountId: "bot",
-                }
-              : undefined,
-        },
-        dispatcherOptions: {
-          deliver: dispatchHandlers.deliver,
-          onError: dispatchHandlers.onError,
-        },
-      }),
-      replyRuntimePolicy.replyTimeoutMs,
-      `dispatch timed out after ${replyRuntimePolicy.replyTimeoutMs}ms`,
-    );
-
-    const shouldReturnAfterFallback = await handleWecomBotPostDispatchFallback({
-      api,
-      sessionId,
-      dispatchState,
-      dispatchStartedAt,
-      tryFinishFromTranscript,
-      markdownToWecomText,
-      safeDeliverReply,
-      startLateReplyWatcher,
-    });
-    if (shouldReturnAfterFallback) return;
+    startLateReplyWatcher = dispatchResult.startLateReplyWatcher;
+    readTranscriptFallbackResult = dispatchResult.readTranscriptFallbackResult;
+    if (dispatchResult.shouldReturnAfterFallback) return;
   } catch (err) {
     const shouldReturnFromError = await handleWecomBotDispatchError({
       api,
       err,
-      dispatchStartedAt,
+      dispatchStartedAt: state.dispatchStartedAt,
       isDispatchTimeoutError,
       startLateReplyWatcher,
-      sessionId,
+      sessionId: state.sessionId,
       fromUser,
       buildWecomBotSessionId,
       runtime,
       cfg,
-      routedAgentId,
+      routedAgentId: state.routedAgentId,
       readTranscriptFallbackResult,
       safeDeliverReply,
       markTranscriptReplyDelivered,
     });
     if (shouldReturnFromError) return;
   } finally {
-    for (const filePath of tempPathsToCleanup) {
+    for (const filePath of state.tempPathsToCleanup) {
       scheduleTempFileCleanup(filePath, api.logger);
     }
   }
