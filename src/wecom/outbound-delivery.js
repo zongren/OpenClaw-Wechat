@@ -2,6 +2,8 @@ import { createWecomDeliveryRouter, parseWecomResponseUrlResult } from "../core/
 import { buildWecomBotMixedPayload, normalizeWecomBotOutboundMediaUrls } from "./webhook-adapter.js";
 import { resolveWecomOutboundMediaTarget } from "./media-url-utils.js";
 import { createWecomActiveStreamDeliverer } from "./outbound-active-stream.js";
+import { createWecomAgentPushDeliverer } from "./outbound-agent-push.js";
+import { createWecomResponseUrlDeliverer } from "./outbound-response-delivery.js";
 import { createWecomResponseUrlSender } from "./outbound-response-url.js";
 import { createWecomWebhookBotDeliverer } from "./outbound-webhook-delivery.js";
 import { createWecomWebhookBotMediaSender } from "./outbound-webhook-media.js";
@@ -95,6 +97,14 @@ export function createWecomBotReplyDeliverer({
     sendWebhookBotMediaBatch,
     fetchImpl,
   });
+  const deliverResponseUrlReply = createWecomResponseUrlDeliverer({
+    sendWecomBotPayloadViaResponseUrl,
+    markBotResponseUrlUsed,
+  });
+  const deliverAgentPushReply = createWecomAgentPushDeliverer({
+    getWecomConfig,
+    sendWecomText,
+  });
 
   async function deliverBotReplyText({
     api,
@@ -151,34 +161,17 @@ export function createWecomBotReplyDeliverer({
           });
         },
         response_url: async ({ text: content }) => {
-          const targetUrl = inlineResponseUrl || cachedResponseUrl?.url || "";
-          if (!targetUrl) {
-            return { ok: false, reason: "response-url-missing" };
-          }
-          if (cachedResponseUrl?.used) {
-            return { ok: false, reason: "response-url-used" };
-          }
-          const payload = mixedPayload || {
-            msgtype: "text",
-            text: {
-              content: content || fallbackText,
-            },
-          };
-          const result = await sendWecomBotPayloadViaResponseUrl({
-            responseUrl: targetUrl,
-            payload,
+          return deliverResponseUrlReply({
+            sessionId: normalizedSessionId,
+            inlineResponseUrl,
+            cachedResponseUrl,
+            mixedPayload,
+            content,
+            fallbackText,
             logger: api.logger,
             proxyUrl: botProxyUrl,
             timeoutMs: webhookBotPolicy.timeoutMs,
           });
-          markBotResponseUrlUsed(normalizedSessionId);
-          return {
-            ok: true,
-            meta: {
-              status: result.status,
-              errcode: result.errcode ?? 0,
-            },
-          };
         },
         webhook_bot: async ({ text: content }) => {
           return deliverWebhookBotReply({
@@ -193,25 +186,13 @@ export function createWecomBotReplyDeliverer({
           });
         },
         agent_push: async ({ text: content }) => {
-          const account = getWecomConfig(api, "default") ?? getWecomConfig(api);
-          if (!account?.corpId || !account?.corpSecret || !account?.agentId) {
-            return { ok: false, reason: "agent-config-missing" };
-          }
-          await sendWecomText({
-            corpId: account.corpId,
-            corpSecret: account.corpSecret,
-            agentId: account.agentId,
-            toUser: fromUser,
-            text: `${content || fallbackText}${mediaFallbackSuffix}`.trim(),
-            logger: api.logger,
-            proxyUrl: account.outboundProxy,
+          return deliverAgentPushReply({
+            api,
+            fromUser,
+            content,
+            fallbackText,
+            mediaFallbackSuffix,
           });
-          return {
-            ok: true,
-            meta: {
-              accountId: account.accountId || "default",
-            },
-          };
         },
       },
     });
