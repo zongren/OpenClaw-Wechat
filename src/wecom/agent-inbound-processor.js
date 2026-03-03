@@ -3,6 +3,7 @@ import { createWecomAgentDispatchHandlers } from "./agent-dispatch-handlers.js";
 import { handleWecomAgentPostDispatchFallback } from "./agent-dispatch-fallback.js";
 import { createWecomAgentLateReplyRuntime } from "./agent-late-reply-runtime.js";
 import { createWecomAgentDispatchState, resolveWecomAgentReplyRuntimePolicy } from "./agent-reply-runtime.js";
+import { prepareWecomAgentRuntimeContext } from "./agent-runtime-context.js";
 import { createWecomAgentStreamingChunkManager } from "./agent-streaming-chunks.js";
 import { createWecomLateReplyWatcher } from "./agent-late-reply-watcher.js";
 import { buildWorkspaceAutoSendHints, computeStreamingTailText } from "./agent-reply-format.js";
@@ -217,96 +218,33 @@ export function createWecomAgentInboundProcessor(deps = {}) {
       return;
     }
 
-    // 获取路由信息
-    const route = resolveWecomAgentRoute({
+    const runtimeContext = await prepareWecomAgentRuntimeContext({
+      api,
       runtime,
       cfg,
-      channel: "wecom",
-      accountId: config.accountId || "default",
-      sessionKey: baseSessionId,
+      baseSessionId,
       fromUser,
       chatId,
       isGroupChat,
-      content: commandBody || messageText,
-      mentionPatterns: groupChatPolicy.mentionPatterns,
-      dynamicConfig: dynamicAgentPolicy,
-      isAdminUser,
-      logger: api.logger,
-    });
-    routedAgentId = String(route?.agentId ?? "").trim();
-    sessionId = String(route?.sessionKey ?? "").trim() || baseSessionId;
-    api.logger.info?.(
-      `wecom: routed agent=${route.agentId} session=${sessionId} matchedBy=${route.dynamicMatchedBy || route.matchedBy || "default"}`,
-    );
-    try {
-      await seedDynamicAgentWorkspace({
-        api,
-        agentId: route.agentId,
-        workspaceTemplate: dynamicAgentPolicy.workspaceTemplate,
-      });
-    } catch (seedErr) {
-      api.logger.warn?.(`wecom: workspace seed failed: ${String(seedErr?.message || seedErr)}`);
-    }
-
-    // 获取 storePath
-    const storePath = runtime.channel.session.resolveStorePath(cfg.session?.store, {
-      agentId: route.agentId,
-    });
-
-    // 格式化消息体
-    const envelopeOptions = runtime.channel.reply.resolveEnvelopeFormatOptions(cfg);
-    const body = runtime.channel.reply.formatInboundEnvelope(
-      {
-        ...buildWecomInboundEnvelopePayload({
-          fromUser,
-          chatId,
-          isGroupChat,
-          messageText,
-        }),
-        ...envelopeOptions,
-      },
-    );
-
-    // 构建 Session 上下文对象
-    const ctxPayload = runtime.channel.reply.finalizeInboundContext(
-      buildWecomInboundContextPayload({
-        body,
-        messageText,
-        originalContent,
-        commandBody,
-        fromAddress,
-        sessionId,
-        accountId: config.accountId || "default",
-        isGroupChat,
-        chatId,
-        fromUser,
-        msgId,
-      }),
-    );
-
-    // 注册会话到 Sessions UI
-    await runtime.channel.session.recordInboundSession({
-      storePath,
-      sessionKey: sessionId,
-      ctx: ctxPayload,
-      updateLastRoute: {
-        sessionKey: sessionId,
-        channel: "wecom",
-        to: fromUser,
-        accountId: config.accountId || "default",
-      },
-      onRecordError: (err) => {
-        api.logger.warn?.(`wecom: failed to record session: ${err}`);
-      },
-    });
-    api.logger.info?.(`wecom: session registered for ${sessionId}`);
-
-    // 记录渠道活动
-    runtime.channel.activity.record({
-      channel: "wecom",
+      msgId,
+      messageText,
+      commandBody,
+      originalContent,
+      fromAddress,
       accountId: config.accountId || "default",
-      direction: "inbound",
+      groupChatPolicy,
+      dynamicAgentPolicy,
+      isAdminUser,
+      resolveWecomAgentRoute,
+      seedDynamicAgentWorkspace,
+      buildWecomInboundEnvelopePayload,
+      buildWecomInboundContextPayload,
     });
+    routedAgentId = runtimeContext.routedAgentId;
+    sessionId = runtimeContext.sessionId;
+    const storePath = runtimeContext.storePath;
+    const ctxPayload = runtimeContext.ctxPayload;
+    const runtimeAccountId = runtimeContext.accountId;
 
     api.logger.info?.(`wecom: dispatching message via agent runtime for session ${sessionId}`);
 
@@ -340,7 +278,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
       sessionId,
       msgId,
       transcriptSessionId: ctxPayload.SessionId || sessionId,
-      accountId: config.accountId || "default",
+      accountId: runtimeAccountId,
       storePath,
       lateReplyWatchMs,
       lateReplyPollMs,
@@ -400,7 +338,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
                 ? {
                     sessionKey: sessionId,
                     agentId: routedAgentId,
-                    accountId: config.accountId || "default",
+                    accountId: runtimeAccountId,
                   }
                 : undefined,
           },
