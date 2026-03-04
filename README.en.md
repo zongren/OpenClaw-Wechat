@@ -349,6 +349,15 @@ WeCom image URLs can return non-standard content type or encrypted media stream.
 ### Can Telegram and WeCom affect each other?
 They are logically independent, but can conflict via shared webhook paths, multi-process gateway races, or loose plugin loading policy.
 
+### Why is the Bot contact not visible in the WeChat plugin entry?
+This is usually a WeCom product behavior difference, not a plugin bug.  
+In many tenants, the WeChat plugin entry maps to **self-built app (Agent callback)** visibility, while Bot mode (intelligent bot API) is not exposed as a direct contact.
+
+Recommended setup:
+1. Need stable direct entry: prefer Agent mode.
+2. Need group notifications/conversation: prefer Webhook Bot / Bot mode.
+3. Need both: run Agent (entry) + Bot (group capability) together.
+
 ### Why does `curl https://<domain>/wecom/callback` return WebUI instead of webhook health text?
 That is a routing issue. `GET /wecom/callback` (without `echostr`) should return plain text `wecom webhook ok`.
 If you get WebUI HTML, your reverse proxy is sending `/wecom/*` to frontend/static service.

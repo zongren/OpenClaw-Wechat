@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - 新增场景化兼容矩阵：`wecom:e2e:scenario --scenario compat-smoke` 支持新旧回调 URL 双链路验证（Agent/Bot）
 - 新增兼容矩阵快捷命令：`npm run wecom:e2e:compat`（等价 `wecom:e2e:scenario --scenario compat-smoke`）
 - CI 远端联调增强：`workflow_dispatch` 支持选择 `e2e_scenario`、浏览器准备模式与 PDF 回收参数
+- FAQ 补充：明确 Bot 模式在“微信插件入口”可见性的产品限制，并给出 Agent/Bot 并行方案建议
 
 ### Changed
 - 多账号默认回调路径自动分配：
