@@ -48,6 +48,7 @@
     "wecom:bot:selfcheck": "node ./scripts/wecom-bot-selfcheck.mjs",
     "wecom:remote:e2e": "node ./scripts/wecom-remote-e2e.mjs",
     "wecom:e2e:scenario": "node ./scripts/wecom-e2e-scenario.mjs",
+    "wecom:e2e:full": "node ./scripts/wecom-e2e-scenario.mjs --scenario full-smoke --prepare-browser --collect-pdf",
     "wecom:smoke": "bash ./scripts/wecom-smoke.sh"
   },
   "dependencies": {

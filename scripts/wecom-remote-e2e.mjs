@@ -14,6 +14,10 @@ function parseArgs(argv) {
     timeoutMs: 12000,
     pollCount: 15,
     pollIntervalMs: 800,
+    prepareBrowser: false,
+    collectPdf: false,
+    browserPrepareMode: "",
+    browserRequireReady: false,
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -52,6 +56,15 @@ function parseArgs(argv) {
       const n = Number(next);
       if (Number.isFinite(n) && n > 0) out.pollIntervalMs = Math.floor(n);
       i += 1;
+    } else if (arg === "--prepare-browser") {
+      out.prepareBrowser = true;
+    } else if (arg === "--collect-pdf") {
+      out.collectPdf = true;
+    } else if (arg === "--browser-prepare-mode" && next) {
+      out.browserPrepareMode = String(next).trim().toLowerCase();
+      i += 1;
+    } else if (arg === "--browser-require-ready") {
+      out.browserRequireReady = true;
     } else if (arg === "-h" || arg === "--help") {
       printHelp();
       process.exit(0);
@@ -69,6 +82,9 @@ function parseArgs(argv) {
   }
   if ((mode === "agent" || mode === "all") && !String(out.agentUrl ?? "").trim()) {
     throw new Error("Missing required argument: --agent-url <https://.../wecom/callback>");
+  }
+  if (out.browserPrepareMode && !["check", "install", "off"].includes(out.browserPrepareMode)) {
+    throw new Error("Invalid --browser-prepare-mode, expected one of: check | install | off");
   }
 
   return out;
@@ -91,15 +107,39 @@ Options:
   --timeout-ms <ms>        Optional: HTTP timeout (default: 12000)
   --poll-count <n>         Optional: stream refresh polls (default: 15)
   --poll-interval-ms <ms>  Optional: stream refresh interval (default: 800)
+  --prepare-browser        Optional: run remote browser sandbox preparation check before E2E
+  --collect-pdf            Optional: collect browser-generated PDFs after E2E
+  --browser-prepare-mode   Optional: check | install | off (for prepare step)
+  --browser-require-ready  Optional: fail if browser sandbox not ready
   -h, --help               Show this help
 `);
 }
 
-async function runNode(script, args = []) {
+async function runNode(script, args = [], extraEnv = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [script, ...args], {
       stdio: "inherit",
-      env: process.env,
+      env: {
+        ...process.env,
+        ...extraEnv,
+      },
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${script} exited with code ${code}`));
+    });
+  });
+}
+
+async function runShell(script, args = [], extraEnv = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("bash", [script, ...args], {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        ...extraEnv,
+      },
     });
     child.on("error", reject);
     child.on("exit", (code) => {
@@ -119,8 +159,22 @@ async function main() {
   }
 
   const steps = [];
+  if (args.prepareBrowser) {
+    const prepareEnv = {
+      ...(args.browserPrepareMode ? { E2E_BROWSER_PREPARE_MODE: args.browserPrepareMode } : {}),
+      ...(args.browserRequireReady ? { E2E_BROWSER_REQUIRE_READY: "1" } : {}),
+    };
+    steps.push({
+      label: "Remote browser sandbox prepare",
+      runner: "shell",
+      script: "./tests/e2e/prepare-browser-sandbox.sh",
+      args: [],
+      env: prepareEnv,
+    });
+  }
   steps.push({
     label: "WeCom account selfcheck (network)",
+    runner: "node",
     script: "./scripts/wecom-selfcheck.mjs",
     args: selfcheckArgs,
   });
@@ -144,6 +198,7 @@ async function main() {
     }
     steps.push({
       label: "WeCom Agent remote E2E",
+      runner: "node",
       script: "./scripts/wecom-agent-selfcheck.mjs",
       args: agentArgs,
     });
@@ -170,8 +225,18 @@ async function main() {
     }
     steps.push({
       label: "WeCom Bot remote E2E",
+      runner: "node",
       script: "./scripts/wecom-bot-selfcheck.mjs",
       args: botArgs,
+    });
+  }
+  if (args.collectPdf) {
+    steps.push({
+      label: "Collect remote browser PDF artifacts",
+      runner: "shell",
+      script: "./tests/e2e/collect-browser-pdf.sh",
+      args: [],
+      env: {},
     });
   }
 
@@ -180,8 +245,13 @@ async function main() {
   for (const step of steps) {
     stepIndex += 1;
     console.log(`[${stepIndex}/${totalSteps}] ${step.label}`);
-    // eslint-disable-next-line no-await-in-loop
-    await runNode(step.script, step.args);
+    if (step.runner === "shell") {
+      // eslint-disable-next-line no-await-in-loop
+      await runShell(step.script, step.args, step.env || {});
+    } else {
+      // eslint-disable-next-line no-await-in-loop
+      await runNode(step.script, step.args, step.env || {});
+    }
   }
 
   console.log("Remote E2E completed.");

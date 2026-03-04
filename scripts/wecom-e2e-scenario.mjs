@@ -13,6 +13,10 @@ function parseArgs(argv) {
     timeoutMs: 12000,
     pollCount: 15,
     pollIntervalMs: 800,
+    prepareBrowser: false,
+    collectPdf: false,
+    browserPrepareMode: "",
+    browserRequireReady: false,
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -48,6 +52,15 @@ function parseArgs(argv) {
       const n = Number(next);
       if (Number.isFinite(n) && n > 0) out.pollIntervalMs = Math.floor(n);
       i += 1;
+    } else if (arg === "--prepare-browser") {
+      out.prepareBrowser = true;
+    } else if (arg === "--collect-pdf") {
+      out.collectPdf = true;
+    } else if (arg === "--browser-prepare-mode" && next) {
+      out.browserPrepareMode = String(next).trim().toLowerCase();
+      i += 1;
+    } else if (arg === "--browser-require-ready") {
+      out.browserRequireReady = true;
     } else if (arg === "-h" || arg === "--help") {
       printHelp();
       process.exit(0);
@@ -60,6 +73,9 @@ function parseArgs(argv) {
   const valid = new Set(["bot-smoke", "agent-smoke", "full-smoke", "bot-queue"]);
   if (!valid.has(scenario)) {
     throw new Error(`Invalid --scenario, expected one of: ${Array.from(valid).join(" | ")}`);
+  }
+  if (out.browserPrepareMode && !["check", "install", "off"].includes(out.browserPrepareMode)) {
+    throw new Error("Invalid --browser-prepare-mode, expected one of: check | install | off");
   }
   if ((scenario === "bot-smoke" || scenario === "full-smoke" || scenario === "bot-queue") && !String(out.botUrl).trim()) {
     throw new Error("Missing required argument: --bot-url <https://.../wecom/bot/callback>");
@@ -92,6 +108,10 @@ Options:
   --timeout-ms <ms>        HTTP timeout (default: 12000)
   --poll-count <n>         Bot stream-refresh polls (default: 15)
   --poll-interval-ms <ms>  Bot poll interval (default: 800)
+  --prepare-browser        Run remote browser sandbox prepare before E2E
+  --collect-pdf            Collect browser-generated PDFs after E2E
+  --browser-prepare-mode   check | install | off
+  --browser-require-ready  Fail when browser sandbox is not ready
   -h, --help               Show help
 `);
 }
@@ -129,6 +149,10 @@ function buildRemoteE2eArgs({ mode, options, content }) {
   if (options.agentUrl) args.push("--agent-url", options.agentUrl);
   if (options.configPath) args.push("--config", options.configPath);
   if (options.fromUser) args.push("--from-user", options.fromUser);
+  if (options.prepareBrowser) args.push("--prepare-browser");
+  if (options.collectPdf) args.push("--collect-pdf");
+  if (options.browserPrepareMode) args.push("--browser-prepare-mode", options.browserPrepareMode);
+  if (options.browserRequireReady) args.push("--browser-require-ready");
   return args;
 }
 
@@ -184,4 +208,3 @@ main().catch((err) => {
   console.error(`Scenario E2E failed: ${String(err?.message || err)}`);
   process.exit(1);
 });
-
