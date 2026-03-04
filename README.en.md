@@ -328,6 +328,7 @@ npm run wecom:bot:selfcheck
 | `npm run wecom:bot:selfcheck` | Bot E2E self-check (signature/encryption/stream-refresh) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback>` | remote matrix verification (Agent + Bot) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback> --prepare-browser --collect-pdf` | remote matrix with browser sandbox prepare + PDF artifact collection |
+| `WECOM_E2E_BOT_URL=<...> WECOM_E2E_AGENT_URL=<...> npm run wecom:remote:e2e -- --mode all` | env-driven remote E2E (also compatible with legacy `E2E_WECOM_*`) |
 | `npm run wecom:e2e:scenario -- --scenario full-smoke --agent-url <public-agent-callback> --bot-url <public-bot-callback>` | scenario-based E2E (preset smoke/queue workflows) |
 | `npm run wecom:e2e:full -- --agent-url <public-agent-callback> --bot-url <public-bot-callback>` | one-shot full-smoke (pre-enabled `--prepare-browser --collect-pdf`) |
 | `GitHub Actions -> CI -> Run workflow (run_remote_e2e=true)` | trigger remote E2E in CI (uses `WECOM_E2E_*` secrets) |

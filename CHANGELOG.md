@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - 新增远端浏览器 E2E 辅助脚本：`test:e2e:prepare-browser`（沙箱就绪检查）与 `test:e2e:collect-pdf`（回收 PDF 产物）
 - 新增远端 E2E 联动参数：`wecom:remote:e2e` / `wecom:e2e:scenario` 支持 `--prepare-browser`、`--collect-pdf`、`--browser-prepare-mode`、`--browser-require-ready`
 - 新增一键命令：`npm run wecom:e2e:full`（full-smoke + 浏览器准备检查 + PDF 回收）
+- 新增远端 E2E 环境变量兼容：`wecom:remote:e2e` / `wecom:e2e:scenario` 支持 `WECOM_E2E_*` 与 legacy `E2E_WECOM_*` 默认参数注入
 
 ### Changed
 - 多账号默认回调路径自动分配：

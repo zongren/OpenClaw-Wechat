@@ -2,21 +2,42 @@
 
 import { spawn } from "node:child_process";
 
+function pickFirstEnv(...names) {
+  for (const name of names) {
+    const value = String(process.env[name] ?? "").trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+function joinBaseUrl(baseUrl, path) {
+  const safeBase = String(baseUrl ?? "").trim().replace(/\/+$/, "");
+  const safePath = String(path ?? "").trim();
+  if (!safeBase || !safePath) return "";
+  return `${safeBase}${safePath.startsWith("/") ? safePath : `/${safePath}`}`;
+}
+
 function parseArgs(argv) {
   const out = {
     scenario: "full-smoke",
-    botUrl: "",
-    agentUrl: "",
-    configPath: process.env.OPENCLAW_CONFIG_PATH || "",
+    botUrl:
+      pickFirstEnv("WECOM_E2E_BOT_URL") ||
+      joinBaseUrl(pickFirstEnv("WECOM_E2E_BASE_URL"), pickFirstEnv("WECOM_E2E_BOT_PATH")) ||
+      joinBaseUrl(pickFirstEnv("E2E_WECOM_BASE_URL"), pickFirstEnv("E2E_WECOM_WEBHOOK_PATH") || "/wecom/bot/callback"),
+    agentUrl:
+      pickFirstEnv("WECOM_E2E_AGENT_URL") ||
+      joinBaseUrl(pickFirstEnv("WECOM_E2E_BASE_URL"), pickFirstEnv("WECOM_E2E_AGENT_PATH")) ||
+      joinBaseUrl(pickFirstEnv("E2E_WECOM_BASE_URL"), pickFirstEnv("E2E_WECOM_AGENT_WEBHOOK_PATH") || "/wecom/callback"),
+    configPath: pickFirstEnv("WECOM_E2E_CONFIG", "OPENCLAW_CONFIG_PATH"),
     account: "default",
-    fromUser: "",
-    timeoutMs: 12000,
-    pollCount: 15,
-    pollIntervalMs: 800,
+    fromUser: pickFirstEnv("WECOM_E2E_FROM_USER", "E2E_WECOM_TEST_USER"),
+    timeoutMs: Number(pickFirstEnv("WECOM_E2E_TIMEOUT_MS", "E2E_WECOM_STREAM_TIMEOUT_MS")) || 12000,
+    pollCount: Number(pickFirstEnv("WECOM_E2E_POLL_COUNT")) || 15,
+    pollIntervalMs: Number(pickFirstEnv("WECOM_E2E_POLL_INTERVAL_MS", "E2E_WECOM_POLL_INTERVAL_MS")) || 800,
     prepareBrowser: false,
     collectPdf: false,
-    browserPrepareMode: "",
-    browserRequireReady: false,
+    browserPrepareMode: pickFirstEnv("E2E_BROWSER_PREPARE_MODE"),
+    browserRequireReady: pickFirstEnv("E2E_BROWSER_REQUIRE_READY") === "1",
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -113,6 +134,11 @@ Options:
   --browser-prepare-mode   check | install | off
   --browser-require-ready  Fail when browser sandbox is not ready
   -h, --help               Show help
+
+Env shortcuts:
+  WECOM_E2E_BOT_URL / WECOM_E2E_AGENT_URL / WECOM_E2E_BASE_URL + *_PATH
+  WECOM_E2E_TIMEOUT_MS / WECOM_E2E_POLL_* / WECOM_E2E_FROM_USER
+  Legacy: E2E_WECOM_BASE_URL / E2E_WECOM_WEBHOOK_PATH / E2E_WECOM_*
 `);
 }
 
