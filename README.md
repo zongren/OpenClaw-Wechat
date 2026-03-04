@@ -242,7 +242,7 @@ openclaw gateway restart
 openclaw gateway status
 openclaw plugins list
 npm run wecom:selfcheck -- --all-accounts
-npm run wecom:bot:selfcheck
+npm run wecom:bot:selfcheck -- --account default
 ```
 
 `wecom:selfcheck` 帮助：
@@ -544,7 +544,7 @@ npm run wecom:bot:selfcheck
 | `npm run test:e2e:collect-pdf` | 收集远端浏览器沙箱中的 PDF 产物到本地 |
 | `npm run wecom:selfcheck -- --all-accounts` | 配置+网络体检 |
 | `npm run wecom:agent:selfcheck -- --account <id>` | Agent 端到端链路体检（URL 验证 + 加密 POST） |
-| `npm run wecom:bot:selfcheck` | Bot 端到端链路体检（签名/加密/stream-refresh） |
+| `npm run wecom:bot:selfcheck -- --account <id>` | Bot 端到端链路体检（签名/加密/stream-refresh，支持多账户） |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <公网Agent回调> --bot-url <公网Bot回调>` | 远端矩阵验证（Agent+Bot） |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <公网Agent回调> --bot-url <公网Bot回调> --prepare-browser --collect-pdf` | 远端矩阵验证（含浏览器沙箱检查与 PDF 回收） |
 | `WECOM_E2E_BOT_URL=<...> WECOM_E2E_AGENT_URL=<...> npm run wecom:remote:e2e -- --mode all` | 用环境变量驱动远端 E2E（兼容旧 `E2E_WECOM_*`） |

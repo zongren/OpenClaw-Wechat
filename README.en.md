@@ -93,7 +93,7 @@ openclaw gateway restart
 openclaw gateway status
 npm run wecom:selfcheck -- --all-accounts
 npm run wecom:agent:selfcheck -- --account default
-npm run wecom:bot:selfcheck
+npm run wecom:bot:selfcheck -- --account default
 ```
 
 ## Requirements
@@ -326,7 +326,7 @@ npm run wecom:bot:selfcheck
 | `npm run test:e2e:collect-pdf` | collect browser-generated PDFs from remote sandbox to local artifacts |
 | `npm run wecom:selfcheck -- --all-accounts` | config/network self-check |
 | `npm run wecom:agent:selfcheck -- --account <id>` | Agent E2E self-check (URL verify + encrypted POST) |
-| `npm run wecom:bot:selfcheck` | Bot E2E self-check (signature/encryption/stream-refresh) |
+| `npm run wecom:bot:selfcheck -- --account <id>` | Bot E2E self-check (signature/encryption/stream-refresh, supports multi-account) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback>` | remote matrix verification (Agent + Bot) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback> --prepare-browser --collect-pdf` | remote matrix with browser sandbox prepare + PDF artifact collection |
 | `WECOM_E2E_BOT_URL=<...> WECOM_E2E_AGENT_URL=<...> npm run wecom:remote:e2e -- --mode all` | env-driven remote E2E (also compatible with legacy `E2E_WECOM_*`) |

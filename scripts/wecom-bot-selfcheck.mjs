@@ -7,6 +7,7 @@ import path from "node:path";
 
 function parseArgs(argv) {
   const out = {
+    account: "default",
     configPath: process.env.OPENCLAW_CONFIG_PATH || "~/.openclaw/openclaw.json",
     url: "",
     fromUser: "",
@@ -20,7 +21,10 @@ function parseArgs(argv) {
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     const next = argv[i + 1];
-    if (arg === "--config" && next) {
+    if (arg === "--account" && next) {
+      out.account = normalizeAccountId(next);
+      i += 1;
+    } else if (arg === "--config" && next) {
       out.configPath = next;
       i += 1;
     } else if (arg === "--url" && next) {
@@ -64,6 +68,7 @@ Usage:
   npm run wecom:bot:selfcheck -- [options]
 
 Options:
+  --account <id>            Bot account id (default: default)
   --config <path>            OpenClaw config path (default: ~/.openclaw/openclaw.json)
   --url <http-url>           Override Bot callback URL
   --from-user <userid>       Simulated sender (default: auto-generated)
@@ -81,6 +86,17 @@ function expandHome(p) {
   if (p === "~") return os.homedir();
   if (p.startsWith("~/")) return path.join(os.homedir(), p.slice(2));
   return p;
+}
+
+function normalizeAccountId(accountId) {
+  const normalized = String(accountId ?? "default").trim().toLowerCase();
+  return normalized || "default";
+}
+
+function buildDefaultBotWebhookPath(accountId) {
+  const normalized = normalizeAccountId(accountId);
+  if (normalized === "default") return "/wecom/bot/callback";
+  return `/wecom/${normalized}/bot/callback`;
 }
 
 function normalizeWebhookPath(raw, fallback = "/wecom/bot/callback") {
@@ -197,25 +213,44 @@ function sleep(ms) {
 }
 
 function resolveBotConfig(config) {
+  const accountId = normalizeAccountId(config?.accountId ?? "default");
   const channel = config?.channels?.wecom ?? {};
-  const bot = channel?.bot ?? {};
+  const accountBlock =
+    accountId === "default"
+      ? channel
+      : channel?.accounts && typeof channel.accounts === "object"
+        ? channel.accounts[accountId] ?? {}
+        : {};
+  const bot =
+    accountId === "default"
+      ? channel?.bot ?? {}
+      : accountBlock?.bot && typeof accountBlock.bot === "object"
+        ? accountBlock.bot
+        : {};
   const envVars = config?.env?.vars ?? {};
+  const accountEnvPrefix = accountId === "default" ? null : `WECOM_${accountId.toUpperCase()}_BOT_`;
+  const readBotEnv = (suffix) => {
+    const scopedKey = accountEnvPrefix ? `${accountEnvPrefix}${suffix}` : "";
+    return pickFirstNonEmptyString(
+      scopedKey ? envVars?.[scopedKey] : "",
+      scopedKey ? process.env[scopedKey] : "",
+      envVars?.[`WECOM_BOT_${suffix}`],
+      process.env[`WECOM_BOT_${suffix}`],
+    );
+  };
   const enabled = parseBooleanLike(
     bot.enabled,
-    parseBooleanLike(envVars.WECOM_BOT_ENABLED, parseBooleanLike(process.env.WECOM_BOT_ENABLED, false)),
+    parseBooleanLike(readBotEnv("ENABLED"), false),
   );
-  const token = pickFirstNonEmptyString(bot.token, envVars.WECOM_BOT_TOKEN, process.env.WECOM_BOT_TOKEN);
-  const encodingAesKey = pickFirstNonEmptyString(
-    bot.encodingAesKey,
-    envVars.WECOM_BOT_ENCODING_AES_KEY,
-    process.env.WECOM_BOT_ENCODING_AES_KEY,
-  );
+  const token = pickFirstNonEmptyString(bot.token, bot.callbackToken, readBotEnv("TOKEN"));
+  const encodingAesKey = pickFirstNonEmptyString(bot.encodingAesKey, bot.callbackAesKey, readBotEnv("ENCODING_AES_KEY"));
   const webhookPath = normalizeWebhookPath(
-    pickFirstNonEmptyString(bot.webhookPath, envVars.WECOM_BOT_WEBHOOK_PATH, process.env.WECOM_BOT_WEBHOOK_PATH),
-    "/wecom/bot/callback",
+    pickFirstNonEmptyString(bot.webhookPath, readBotEnv("WEBHOOK_PATH")),
+    buildDefaultBotWebhookPath(accountId),
   );
   const gatewayPort = asNumber(config?.gateway?.port, 8885);
   return {
+    accountId,
     enabled,
     token,
     encodingAesKey,
@@ -314,6 +349,7 @@ function reportAndExit(report, asJson = false) {
   }
   console.log("WeCom Bot E2E selfcheck");
   console.log(`- config: ${report.configPath}`);
+  console.log(`- account: ${report.account}`);
   console.log(`- endpoint: ${report.endpoint}`);
   console.log(`- fromUser: ${report.fromUser}`);
   console.log(`- content: ${report.content}`);
@@ -326,12 +362,22 @@ function reportAndExit(report, asJson = false) {
 
 async function runBotE2E({ config, args, configPath }) {
   const checks = [];
-  const botConfig = resolveBotConfig(config);
+  const botConfig = resolveBotConfig({
+    ...config,
+    accountId: args.account,
+  });
   const endpoint = buildCallbackUrl({ args, botConfig });
   const fromUser =
     String(args.fromUser ?? "").trim() || `DxBotSelfCheck${Date.now().toString(36).slice(-6)}`;
   const content = String(args.content ?? "").trim() || "/status";
 
+  checks.push(
+    makeCheck(
+      "config.account",
+      true,
+      `account=${botConfig.accountId}`,
+    ),
+  );
   checks.push(makeCheck("config.bot.enabled", botConfig.enabled, botConfig.enabled ? "enabled" : "disabled"));
   checks.push(makeCheck("config.bot.token", Boolean(botConfig.token), botConfig.token ? "present" : "missing"));
   checks.push(
@@ -368,6 +414,7 @@ async function runBotE2E({ config, args, configPath }) {
   if (!botConfig.enabled || !botConfig.token || !botConfig.encodingAesKey || !aesKeyValid) {
     const report = {
       configPath,
+      account: botConfig.accountId,
       endpoint,
       fromUser,
       content,
@@ -510,6 +557,7 @@ async function runBotE2E({ config, args, configPath }) {
 
   return {
     configPath,
+    account: botConfig.accountId,
     endpoint,
     fromUser,
     content,
@@ -528,6 +576,7 @@ async function main() {
   } catch (err) {
     const report = {
       configPath,
+      account: normalizeAccountId(args.account),
       endpoint: "",
       fromUser: args.fromUser || "",
       content: args.content || "",

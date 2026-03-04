@@ -30,6 +30,9 @@ All notable changes to this project will be documented in this file.
 - FAQ 补充：明确 Bot 模式在“微信插件入口”可见性的产品限制，并给出 Agent/Bot 并行方案建议
 - 新增远端矩阵 E2E：`test:e2e:matrix`，覆盖 Bot 回调验签、异常请求、stream-refresh 与重复消息去重链路
 - 新增 `matrix-smoke` 场景：`wecom:e2e:scenario --scenario matrix-smoke` 可直接触发 Bot 协议矩阵回归
+- 新增 Bot 可见性诊断：`/status` 与 `wecom:bot:selfcheck` 输出“微信插件入口联系人”提示，避免将产品形态差异误判为插件故障
+- 新增 Bot 自检多账户参数：`npm run wecom:bot:selfcheck -- --account <id>`（支持 scoped `WECOM_<ACCOUNT>_BOT_*` 环境变量）
+- 新增安装元数据：`package.json` 增加 `openclaw.install`（`defaultChoice=npm` + `npmSpec=@dingxiang-me/openclaw-wechat`）
 
 ### Changed
 - 多账号默认回调路径自动分配：
