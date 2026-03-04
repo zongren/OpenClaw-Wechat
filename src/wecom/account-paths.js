@@ -17,6 +17,13 @@ export function buildDefaultAgentWebhookPath(accountId) {
   return `/wecom/${slug}/callback`;
 }
 
+export function buildLegacyAgentWebhookPath(accountId) {
+  const normalizedId = normalizeAccountId(accountId);
+  if (normalizedId === "default") return "/webhooks/app";
+  const slug = buildWebhookPathAccountSlug(normalizedId);
+  return `/webhooks/app/${slug}`;
+}
+
 export function buildDefaultBotWebhookPath(accountId) {
   const normalizedId = normalizeAccountId(accountId);
   if (normalizedId === "default") return "/wecom/bot/callback";

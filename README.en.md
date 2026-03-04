@@ -146,7 +146,7 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 Compatibility note: legacy keys/layouts are supported: `name`, `token` / `encodingAesKey`, `agent.*`, `dynamicAgents.*`, `dm.createAgentOnFirstMessage`, `dm.allowFrom`, `workspaceTemplate`, `commandAllowlist/commandBlockMessage`, `commands.blockMessage`, and inline account blocks (`channels.wecom.<accountId>`). New configs should prefer `accounts.<id>`, `callbackToken/callbackAesKey`, `commands.*`, and `dynamicAgent.*`.
 
 Note: `accounts.<id>` now supports Bot-only accounts (`bot.*` only) and no longer requires `corpId/corpSecret/agentId`.
-Compat note: when Bot uses the new default paths (for example `/wecom/bot/callback`), the plugin auto-registers legacy aliases (for example `/webhooks/wecom`) for smoother migration.
+Compat note: when default new paths are used, legacy aliases are auto-registered for smoother migration. Agent default paths also add `/webhooks/app` aliases (`/webhooks/app/<id>` for multi-account), and Bot default paths add `/webhooks/wecom` aliases (`/webhooks/wecom/<id>`). Conflicting aliases are skipped with warnings.
 
 ### Bot config (`channels.wecom.bot`)
 

@@ -1,4 +1,9 @@
-import { buildDefaultBotWebhookPath, buildLegacyBotWebhookPath } from "./account-paths.js";
+import {
+  buildDefaultAgentWebhookPath,
+  buildDefaultBotWebhookPath,
+  buildLegacyAgentWebhookPath,
+  buildLegacyBotWebhookPath,
+} from "./account-paths.js";
 
 export function createWecomRouteRegistrar({
   resolveWecomBotConfig,
@@ -155,9 +160,73 @@ export function createWecomRouteRegistrar({
     return registeredCount > 0;
   }
 
+  function buildBotWebhookPathSet(api) {
+    const botPathSet = new Set();
+    const botConfigs = resolveWecomBotConfigs(api);
+    const enabledBotConfigs = (Array.isArray(botConfigs) ? botConfigs : []).filter((item) => item?.enabled === true);
+    for (const botConfig of enabledBotConfigs) {
+      const normalizedAccountId = String(botConfig?.accountId ?? "default").trim().toLowerCase() || "default";
+      const normalizedPath =
+        normalizePluginHttpPath(botConfig.webhookPath ?? "/wecom/bot/callback", "/wecom/bot/callback") ??
+        "/wecom/bot/callback";
+      botPathSet.add(normalizedPath);
+
+      const normalizedDefaultPath = normalizePluginHttpPath(
+        buildDefaultBotWebhookPath(normalizedAccountId),
+        "/wecom/bot/callback",
+      );
+      if (normalizedDefaultPath && normalizedPath === normalizedDefaultPath) {
+        const legacyAliasPath =
+          normalizePluginHttpPath(buildLegacyBotWebhookPath(normalizedAccountId), "/webhooks/wecom") ??
+          "/webhooks/wecom";
+        botPathSet.add(legacyAliasPath);
+      }
+    }
+    return botPathSet;
+  }
+
   function registerWecomAgentWebhookRoutes(api) {
     const webhookGroups = groupAccountsByWebhookPath(api);
+    const grouped = new Map();
     for (const [normalizedPath, accounts] of webhookGroups.entries()) {
+      grouped.set(normalizedPath, [...accounts]);
+    }
+
+    const botPathSet = buildBotWebhookPathSet(api);
+    for (const [normalizedPath, accounts] of webhookGroups.entries()) {
+      for (const account of accounts) {
+        const normalizedAccountId = String(account?.accountId ?? "default").trim().toLowerCase() || "default";
+        const normalizedDefaultPath =
+          normalizePluginHttpPath(buildDefaultAgentWebhookPath(normalizedAccountId), "/wecom/callback") ??
+          "/wecom/callback";
+        if (normalizedPath !== normalizedDefaultPath) continue;
+
+        const legacyAliasPath =
+          normalizePluginHttpPath(buildLegacyAgentWebhookPath(normalizedAccountId), "/webhooks/app") ??
+          "/webhooks/app";
+        if (!legacyAliasPath || legacyAliasPath === normalizedPath) continue;
+        if (botPathSet.has(legacyAliasPath)) {
+          api.logger.warn?.(
+            `wecom: skip legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId} (conflicts with bot webhook path)`,
+          );
+          continue;
+        }
+
+        const existing = grouped.get(legacyAliasPath);
+        if (existing) {
+          const duplicated = existing.some(
+            (item) =>
+              (String(item?.accountId ?? "default").trim().toLowerCase() || "default") === normalizedAccountId,
+          );
+          if (!duplicated) existing.push(account);
+        } else {
+          grouped.set(legacyAliasPath, [account]);
+        }
+        api.logger.info?.(`wecom: registered legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId}`);
+      }
+    }
+
+    for (const [normalizedPath, accounts] of grouped.entries()) {
       const handler = createWecomAgentWebhookHandler({
         api,
         accounts,

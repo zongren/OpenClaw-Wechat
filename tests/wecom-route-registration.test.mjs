@@ -83,8 +83,11 @@ test("registerWecomAgentWebhookRoutes registers grouped routes", () => {
 
   const returned = registrar.registerWecomAgentWebhookRoutes(api);
   assert.equal(returned, groups);
-  assert.equal(routes.length, 1);
-  assert.equal(routes[0].path, "/wecom/callback");
+  assert.equal(routes.length, 2);
+  assert.deepEqual(
+    routes.map((item) => item.path).sort(),
+    ["/webhooks/app", "/wecom/callback"],
+  );
 });
 
 test("registerWecomBotWebhookRoute groups multiple accounts by webhook path", () => {
@@ -150,5 +153,59 @@ test("registerWecomBotWebhookRoute skips legacy alias when agent path conflicts"
   assert.deepEqual(
     routes.map((item) => item.path).sort(),
     ["/wecom/bot/callback"],
+  );
+});
+
+test("registerWecomAgentWebhookRoutes groups multiple account aliases", () => {
+  const routes = [];
+  const groups = new Map([
+    ["/wecom/callback", [{ accountId: "default" }]],
+    ["/wecom/ops/callback", [{ accountId: "ops" }]],
+  ]);
+  const registrar = createRegistrar({
+    groupAccountsByWebhookPath: () => groups,
+  });
+  const api = {
+    logger: { info() {}, warn() {}, error() {} },
+    registerHttpRoute(route) {
+      routes.push(route);
+    },
+  };
+
+  const returned = registrar.registerWecomAgentWebhookRoutes(api);
+  assert.equal(returned, groups);
+  assert.deepEqual(
+    routes.map((item) => item.path).sort(),
+    ["/webhooks/app", "/webhooks/app/ops", "/wecom/callback", "/wecom/ops/callback"],
+  );
+});
+
+test("registerWecomAgentWebhookRoutes skips legacy alias when bot path conflicts", () => {
+  const routes = [];
+  const groups = new Map([["/wecom/callback", [{ accountId: "default" }]]]);
+  const registrar = createRegistrar({
+    groupAccountsByWebhookPath: () => groups,
+    resolveWecomBotConfigs: () => [
+      {
+        accountId: "default",
+        enabled: true,
+        token: "t",
+        encodingAesKey: "k",
+        webhookPath: "/webhooks/app",
+      },
+    ],
+  });
+  const api = {
+    logger: { info() {}, warn() {}, error() {} },
+    registerHttpRoute(route) {
+      routes.push(route);
+    },
+  };
+
+  const returned = registrar.registerWecomAgentWebhookRoutes(api);
+  assert.equal(returned, groups);
+  assert.deepEqual(
+    routes.map((item) => item.path).sort(),
+    ["/wecom/callback"],
   );
 });

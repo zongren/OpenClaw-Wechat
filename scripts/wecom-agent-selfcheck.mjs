@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { buildDefaultAgentWebhookPath, buildLegacyAgentWebhookPath } from "../src/wecom/account-paths.js";
 
 function parseArgs(argv) {
   const out = {
@@ -294,6 +295,32 @@ function buildCallbackUrl({ args, account, config }) {
   return `http://127.0.0.1:${gatewayPort}${normalizedPath}`;
 }
 
+function normalizeHttpPath(pathname) {
+  const text = String(pathname ?? "").trim();
+  if (!text) return "/";
+  const prefixed = text.startsWith("/") ? text : `/${text}`;
+  if (prefixed.length > 1 && prefixed.endsWith("/")) return prefixed.slice(0, -1);
+  return prefixed;
+}
+
+function buildLegacyAliasUrl(endpoint, accountId) {
+  let parsed;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    return "";
+  }
+  const normalizedAccountId = normalizeAccountId(accountId);
+  const currentPath = normalizeHttpPath(parsed.pathname);
+  const defaultPath = normalizeHttpPath(buildDefaultAgentWebhookPath(normalizedAccountId));
+  if (currentPath !== defaultPath) return "";
+  const legacyPath = normalizeHttpPath(buildLegacyAgentWebhookPath(normalizedAccountId));
+  if (!legacyPath || legacyPath === currentPath) return "";
+  parsed.pathname = legacyPath;
+  parsed.search = "";
+  return parsed.toString();
+}
+
 function buildSignedUrl(endpoint, token, encrypt) {
   const timestamp = String(Math.floor(Date.now() / 1000));
   const nonce = crypto.randomBytes(8).toString("hex");
@@ -331,6 +358,7 @@ async function runAgentE2E({ config, args, configPath }) {
   const checks = [];
   const account = resolveAccountFromConfig(config, args.account);
   const endpoint = buildCallbackUrl({ args, account, config });
+  const legacyAliasEndpoint = buildLegacyAliasUrl(endpoint, account?.accountId ?? args.account);
   const fromUser = String(args.fromUser ?? "").trim() || `DxAgentSelfCheck${Date.now().toString(36).slice(-6)}`;
   const content = String(args.content ?? "").trim() || "/status";
   const msgId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -396,6 +424,28 @@ async function runAgentE2E({ config, args, configPath }) {
     checks.push(makeCheck("e2e.health.get", false, `request failed: ${String(err?.message || err)}`));
   }
 
+  if (legacyAliasEndpoint) {
+    try {
+      const healthResponse = await fetchWithTimeout(legacyAliasEndpoint, { method: "GET" }, Math.min(args.timeoutMs, 4000));
+      const healthBody = await healthResponse.text();
+      const diagnosis = diagnoseLocalHealthResponse({
+        status: healthResponse.status,
+        body: healthBody,
+        endpoint: legacyAliasEndpoint,
+      });
+      checks.push(
+        makeCheck(
+          "e2e.health.get.legacyAlias",
+          diagnosis.ok,
+          diagnosis.detail,
+          diagnosis.data,
+        ),
+      );
+    } catch (err) {
+      checks.push(makeCheck("e2e.health.get.legacyAlias", false, `request failed: ${String(err?.message || err)}`));
+    }
+  }
+
   try {
     const plainEchostr = `agent-echostr-${Date.now().toString(36)}`;
     const encryptedEchostr = encryptWecom({
@@ -417,6 +467,31 @@ async function runAgentE2E({ config, args, configPath }) {
     );
   } catch (err) {
     checks.push(makeCheck("e2e.url.verify", false, `request failed: ${String(err?.message || err)}`));
+  }
+
+  if (legacyAliasEndpoint) {
+    try {
+      const plainEchostr = `agent-legacy-echostr-${Date.now().toString(36)}`;
+      const encryptedEchostr = encryptWecom({
+        aesKey: account.callbackAesKey,
+        plainText: plainEchostr,
+        corpId: account.corpId,
+      });
+      const verifyUrl = buildSignedUrl(legacyAliasEndpoint, account.callbackToken, encryptedEchostr);
+      verifyUrl.searchParams.set("echostr", encryptedEchostr);
+      const verifyResponse = await fetchWithTimeout(verifyUrl.toString(), { method: "GET" }, args.timeoutMs);
+      const verifyBody = await verifyResponse.text();
+      const matched = verifyResponse.status === 200 && verifyBody === plainEchostr;
+      checks.push(
+        makeCheck(
+          "e2e.url.verify.legacyAlias",
+          matched,
+          `status=${verifyResponse.status} bodyMatched=${matched}`,
+        ),
+      );
+    } catch (err) {
+      checks.push(makeCheck("e2e.url.verify.legacyAlias", false, `request failed: ${String(err?.message || err)}`));
+    }
   }
 
   try {

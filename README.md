@@ -278,7 +278,7 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 兼容说明：支持旧字段与旧结构迁移：`name`、`token` / `encodingAesKey`、`agent.*`、`dynamicAgents.*`、`dm.createAgentOnFirstMessage`、`dm.allowFrom`、`workspaceTemplate`、`commandAllowlist/commandBlockMessage`、`commands.blockMessage`、以及 inline 账户写法 `channels.wecom.<accountId>`。新配置建议优先使用 `accounts.<id>`、`callbackToken/callbackAesKey`、`commands.*` 与 `dynamicAgent.*`。
 
 提示：`accounts.<id>` 现在支持 Bot-only 账号（仅配置 `bot.*`），不再强制要求 `corpId/corpSecret/agentId`。
-兼容提示：当 Bot 使用默认新路径（如 `/wecom/bot/callback`）时，会自动附加 legacy alias（如 `/webhooks/wecom`），便于旧回调地址平滑迁移。
+兼容提示：当使用默认新路径时会自动附加 legacy alias，便于旧回调地址平滑迁移：Agent 默认路径会附加 `/webhooks/app`（多账号为 `/webhooks/app/<id>`），Bot 默认路径会附加 `/webhooks/wecom`（多账号为 `/webhooks/wecom/<id>`）。若 alias 与另一类路由冲突会自动跳过并告警。
 
 ### Bot 配置（`channels.wecom.bot`）
 
