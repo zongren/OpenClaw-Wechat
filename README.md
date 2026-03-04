@@ -275,7 +275,7 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | `webhooks` | object | - | 命名 Webhook 目标映射（如 `{ "ops": "https://...key=xxx" }`） |
 | `accounts` | object | - | 多账户配置（支持 `accounts.<id>.bot` 独立 Bot 配置） |
 
-兼容说明：支持旧字段与旧结构迁移：`token` / `encodingAesKey`、`agent.*`、`dynamicAgents.*`、`dm.createAgentOnFirstMessage`、`dm.allowFrom`、`workspaceTemplate`、`commandAllowlist/commandBlockMessage`、`commands.blockMessage`、以及 inline 账户写法 `channels.wecom.<accountId>`。新配置建议优先使用 `accounts.<id>`、`callbackToken/callbackAesKey`、`commands.*` 与 `dynamicAgent.*`。
+兼容说明：支持旧字段与旧结构迁移：`name`、`token` / `encodingAesKey`、`agent.*`、`dynamicAgents.*`、`dm.createAgentOnFirstMessage`、`dm.allowFrom`、`workspaceTemplate`、`commandAllowlist/commandBlockMessage`、`commands.blockMessage`、以及 inline 账户写法 `channels.wecom.<accountId>`。新配置建议优先使用 `accounts.<id>`、`callbackToken/callbackAesKey`、`commands.*` 与 `dynamicAgent.*`。
 
 ### Bot 配置（`channels.wecom.bot`）
 

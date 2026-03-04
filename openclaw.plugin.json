@@ -13,12 +13,16 @@
     "type": "object",
     "additionalProperties": false,
     "patternProperties": {
-      "^(?!(enabled|corpId|corpSecret|agentId|callbackToken|token|callbackAesKey|encodingAesKey|webhookPath|agent|bot|delivery|webhookBot|stream|observability|outboundProxy|webhooks|allowFrom|allowFromRejectMessage|adminUsers|commandAllowlist|commandBlockMessage|commands|workspaceTemplate|groupChat|dynamicAgent|dynamicAgents|dm|debounce|streaming|voiceTranscription|accounts)$)[A-Za-z0-9_-]+$": {
+      "^(?!(name|enabled|corpId|corpSecret|agentId|callbackToken|token|callbackAesKey|encodingAesKey|webhookPath|agent|bot|delivery|webhookBot|stream|observability|outboundProxy|webhooks|allowFrom|allowFromRejectMessage|adminUsers|commandAllowlist|commandBlockMessage|commands|workspaceTemplate|groupChat|dynamicAgent|dynamicAgents|dm|debounce|streaming|voiceTranscription|accounts)$)[A-Za-z0-9_-]+$": {
         "type": "object",
         "description": "兼容旧配置：inline 多账户（推荐迁移到 channels.wecom.accounts.<id>）"
       }
     },
     "properties": {
+      "name": {
+        "type": "string",
+        "description": "兼容旧配置：渠道显示名（运行时可忽略）"
+      },
       "enabled": {
         "type": "boolean",
         "default": true,
@@ -702,6 +706,10 @@
             "enabled": {
               "type": "boolean",
               "default": true
+            },
+            "name": {
+              "type": "string",
+              "description": "兼容旧配置：账户显示名"
             },
             "corpId": {
               "type": "string",

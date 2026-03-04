@@ -143,7 +143,7 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 | `webhooks` | object | - | named webhook target map (`{ "ops": "https://...key=xxx" }`) |
 | `accounts` | object | - | multi-account map (supports `accounts.<id>.bot` overrides) |
 
-Compatibility note: legacy keys/layouts are supported: `token` / `encodingAesKey`, `agent.*`, `dynamicAgents.*`, `dm.createAgentOnFirstMessage`, `dm.allowFrom`, `workspaceTemplate`, `commandAllowlist/commandBlockMessage`, `commands.blockMessage`, and inline account blocks (`channels.wecom.<accountId>`). New configs should prefer `accounts.<id>`, `callbackToken/callbackAesKey`, `commands.*`, and `dynamicAgent.*`.
+Compatibility note: legacy keys/layouts are supported: `name`, `token` / `encodingAesKey`, `agent.*`, `dynamicAgents.*`, `dm.createAgentOnFirstMessage`, `dm.allowFrom`, `workspaceTemplate`, `commandAllowlist/commandBlockMessage`, `commands.blockMessage`, and inline account blocks (`channels.wecom.<accountId>`). New configs should prefer `accounts.<id>`, `callbackToken/callbackAesKey`, `commands.*`, and `dynamicAgent.*`.
 
 ### Bot config (`channels.wecom.bot`)
 

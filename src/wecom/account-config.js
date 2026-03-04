@@ -8,6 +8,7 @@ import {
 import { normalizePluginHttpPath } from "./http-path.js";
 
 const LEGACY_INLINE_ACCOUNT_RESERVED_KEYS = new Set([
+  "name",
   "enabled",
   "corpId",
   "corpSecret",

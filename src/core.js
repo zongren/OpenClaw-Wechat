@@ -54,6 +54,7 @@ const GROUP_CHAT_TRIGGER_MODE_SET = new Set(["direct", "mention", "keyword"]);
 const DYNAMIC_AGENT_MODE_SET = new Set(["mapping", "deterministic", "hybrid"]);
 const DYNAMIC_AGENT_ID_STRATEGY_SET = new Set(["readable-hash"]);
 const LEGACY_INLINE_ACCOUNT_RESERVED_KEYS = new Set([
+  "name",
   "enabled",
   "corpId",
   "corpSecret",

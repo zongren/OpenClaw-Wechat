@@ -52,6 +52,7 @@ export function normalizeAccountConfig({ raw, accountId, normalizeWecomWebhookTa
   );
   const defaultWebhookPath = buildDefaultAgentWebhookPath(normalizedId);
   const webhookPath = String(raw.webhookPath ?? legacyAgent.webhookPath ?? defaultWebhookPath).trim() || defaultWebhookPath;
+  const name = pickFirstNonEmptyString(raw.name, normalizedId);
   const outboundProxy = String(raw.outboundProxy ?? raw.proxyUrl ?? raw.proxy ?? "").trim();
   const webhooks = normalizeWecomWebhookTargetMap(raw.webhooks);
   const allowFrom = raw.allowFrom;
@@ -63,12 +64,14 @@ export function normalizeAccountConfig({ raw, accountId, normalizeWecomWebhookTa
 
   return {
     accountId: normalizedId,
+    name: normalizedId,
     corpId,
     corpSecret,
     agentId,
     callbackToken,
     callbackAesKey,
     webhookPath,
+    name,
     outboundProxy: outboundProxy || undefined,
     webhooks: Object.keys(webhooks).length > 0 ? webhooks : undefined,
     allowFrom,

@@ -119,6 +119,21 @@ test("normalizeAccountConfig supports legacy agent block and keeps top-level tok
   assert.equal(normalized.agentId, 1000099);
   assert.equal(normalized.callbackToken, "agent-callback-token");
   assert.equal(normalized.callbackAesKey, "agent-callback-aes");
+  assert.equal(normalized.name, "default");
+});
+
+test("normalizeAccountConfig keeps explicit account name", () => {
+  const normalized = normalizeAccountConfig({
+    raw: {
+      name: "Sales Bot",
+      corpId: "ww_sales",
+      corpSecret: "sales-secret",
+      agentId: 1000018,
+    },
+    accountId: "sales",
+    normalizeWecomWebhookTargetMap,
+  });
+  assert.equal(normalized.name, "Sales Bot");
 });
 
 test("readAccountConfigFromEnv auto-assigns non-default webhookPath when missing", () => {

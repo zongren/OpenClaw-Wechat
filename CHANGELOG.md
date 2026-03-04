@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - 新增 legacy 指令配置兼容：`commandAllowlist`、`commandBlockMessage`
 - 新增 legacy 动态路由模板兼容：顶层 `workspaceTemplate` 自动映射到 `dynamicAgent.workspaceTemplate`
 - 新增 legacy 兼容：`dm.allowFrom` 与 `commands.blockMessage`
+- 新增 legacy `name` 字段兼容（渠道与账户级）
 
 ### Changed
 - 多账号默认回调路径自动分配：
