@@ -8,12 +8,16 @@ All notable changes to this project will be documented in this file.
 - 新增多账号冲突诊断：启动时输出 `wecom: account diagnosis ...`（重复 callbackToken / bot token、共享路径等）
 - 新增场景化远端 E2E 脚本：`npm run wecom:e2e:scenario -- --scenario <bot-smoke|agent-smoke|full-smoke|bot-queue>`
 - 新增账号路径诊断单测与默认路径单测（Agent/Bot）
+- 新增 sunnoy 风格配置兼容层：支持 `agent.*`、`dynamicAgents.*`、`dm.createAgentOnFirstMessage`
+- 新增 legacy inline account 兼容解析（`channels.wecom.<accountId>`）及对应回归测试
 
 ### Changed
 - 多账号默认回调路径自动分配：
   - Agent：非 default 账户缺省为 `/wecom/<accountId>/callback`
   - Bot：非 default 账户缺省为 `/wecom/<accountId>/bot/callback`
 - `openclaw.plugin.json` 与 README（中英文）补充自动路径与账号体检说明
+- Bot 配置解析增强：在 legacy `agent` 配置块存在时，自动将顶层 `token/encodingAesKey/webhookPath` 识别为 Bot 配置
+- 动态路由增强：支持私聊/群聊维度开关（`dmCreateAgentOnFirstMessage`、`groupEnabled`）
 
 ## [1.5.0] - 2026-03-04
 

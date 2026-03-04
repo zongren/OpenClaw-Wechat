@@ -213,6 +213,12 @@ function resolveDynamicAgentSelection({
   isAdminUser,
 }) {
   if (dynamicConfig?.enabled !== true) return { agentId: "", matchedBy: "", allowUnknown: false };
+  if (isGroupChat && dynamicConfig?.groupEnabled === false) {
+    return { agentId: "", matchedBy: "", allowUnknown: false };
+  }
+  if (!isGroupChat && dynamicConfig?.dmCreateAgent === false) {
+    return { agentId: "", matchedBy: "", allowUnknown: false };
+  }
 
   const mode = normalizeDynamicMode(dynamicConfig?.mode);
   if (mode === "mapping") {

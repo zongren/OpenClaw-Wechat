@@ -32,13 +32,26 @@ export function normalizeAccountConfig({ raw, accountId, normalizeWecomWebhookTa
   if (!raw || typeof raw !== "object") return null;
   if (typeof normalizeWecomWebhookTargetMap !== "function") return null;
 
-  const corpId = String(raw.corpId ?? "").trim();
-  const corpSecret = String(raw.corpSecret ?? "").trim();
-  const agentId = asNumber(raw.agentId);
-  const callbackToken = pickFirstNonEmptyString(raw.callbackToken, raw.token);
-  const callbackAesKey = pickFirstNonEmptyString(raw.callbackAesKey, raw.encodingAesKey);
+  const legacyAgent = raw.agent && typeof raw.agent === "object" ? raw.agent : {};
+  const hasLegacyAgentBlock = Object.keys(legacyAgent).length > 0;
+
+  const corpId = pickFirstNonEmptyString(raw.corpId, legacyAgent.corpId);
+  const corpSecret = pickFirstNonEmptyString(raw.corpSecret, legacyAgent.corpSecret);
+  const agentId = asNumber(raw.agentId ?? legacyAgent.agentId);
+  const callbackToken = pickFirstNonEmptyString(
+    raw.callbackToken,
+    legacyAgent.callbackToken,
+    legacyAgent.token,
+    hasLegacyAgentBlock ? "" : raw.token,
+  );
+  const callbackAesKey = pickFirstNonEmptyString(
+    raw.callbackAesKey,
+    legacyAgent.callbackAesKey,
+    legacyAgent.encodingAesKey,
+    hasLegacyAgentBlock ? "" : raw.encodingAesKey,
+  );
   const defaultWebhookPath = buildDefaultAgentWebhookPath(normalizedId);
-  const webhookPath = String(raw.webhookPath ?? defaultWebhookPath).trim() || defaultWebhookPath;
+  const webhookPath = String(raw.webhookPath ?? legacyAgent.webhookPath ?? defaultWebhookPath).trim() || defaultWebhookPath;
   const outboundProxy = String(raw.outboundProxy ?? raw.proxyUrl ?? raw.proxy ?? "").trim();
   const webhooks = normalizeWecomWebhookTargetMap(raw.webhooks);
   const allowFrom = raw.allowFrom;

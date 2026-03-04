@@ -138,11 +138,12 @@ openclaw plugins install @dingxiang-me/openclaw-wechat
 | `callbackToken` | string | - | sensitive |
 | `callbackAesKey` | string | - | sensitive |
 | `webhookPath` | string | `/wecom/callback` | Agent callback path (auto `/wecom/<accountId>/callback` when non-default account leaves it empty) |
+| `agent` | object | - | legacy layout: `agent.corpId/corpSecret/agentId` (equivalent to top-level Agent fields) |
 | `outboundProxy` | string | - | WeCom API proxy |
 | `webhooks` | object | - | named webhook target map (`{ "ops": "https://...key=xxx" }`) |
 | `accounts` | object | - | multi-account map (supports `accounts.<id>.bot` overrides) |
 
-Compatibility note: legacy Agent keys `token` / `encodingAesKey` are still accepted (mapped to `callbackToken` / `callbackAesKey`). Prefer the new names for new configs.
+Compatibility note: legacy keys/layouts are supported: `token` / `encodingAesKey`, `agent.*`, `dynamicAgents.*`, `dm.createAgentOnFirstMessage`, and inline account blocks (`channels.wecom.<accountId>`). New configs should prefer `accounts.<id>`, `callbackToken/callbackAesKey`, and `dynamicAgent.*`.
 
 ### Bot config (`channels.wecom.bot`)
 
@@ -183,7 +184,7 @@ When multi-account is enabled, each account can override Bot callback credential
 | Command ACL | `commands.enabled`, `commands.allowlist`, `commands.rejectMessage` |
 | Admin bypass | `adminUsers` |
 | Group trigger | `groupChat.enabled`, `groupChat.triggerMode`, `groupChat.mentionPatterns`, `groupChat.triggerKeywords` |
-| Dynamic route | `dynamicAgent.*` (with `workspaceTemplate` bootstrap seeding) |
+| Dynamic route | `dynamicAgent.*` (compatible with `dynamicAgents.*`, `dm.createAgentOnFirstMessage`) |
 | Debounce | `debounce.enabled`, `debounce.windowMs`, `debounce.maxBatch` |
 | Agent streaming | `streaming.enabled`, `streaming.minChars`, `streaming.minIntervalMs` |
 

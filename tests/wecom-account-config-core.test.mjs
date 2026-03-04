@@ -97,6 +97,30 @@ test("normalizeAccountConfig auto-assigns non-default webhookPath when missing",
   assert.equal(normalized.webhookPath, "/wecom/sales/callback");
 });
 
+test("normalizeAccountConfig supports legacy agent block and keeps top-level token for bot", () => {
+  const normalized = normalizeAccountConfig({
+    raw: {
+      token: "legacy-bot-token",
+      encodingAesKey: "legacy-bot-aes",
+      agent: {
+        corpId: "ww_legacy",
+        corpSecret: "legacy-secret",
+        agentId: 1000099,
+        token: "agent-callback-token",
+        encodingAesKey: "agent-callback-aes",
+      },
+    },
+    accountId: "default",
+    normalizeWecomWebhookTargetMap,
+  });
+
+  assert.equal(normalized.corpId, "ww_legacy");
+  assert.equal(normalized.corpSecret, "legacy-secret");
+  assert.equal(normalized.agentId, 1000099);
+  assert.equal(normalized.callbackToken, "agent-callback-token");
+  assert.equal(normalized.callbackAesKey, "agent-callback-aes");
+});
+
 test("readAccountConfigFromEnv auto-assigns non-default webhookPath when missing", () => {
   const processEnvStub = {
     WECOM_SALES_CORP_ID: "ww_sales",

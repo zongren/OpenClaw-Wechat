@@ -270,11 +270,12 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | `callbackToken` | string | - | 回调 Token（敏感） |
 | `callbackAesKey` | string | - | 回调 AES Key（敏感） |
 | `webhookPath` | string | `/wecom/callback` | Agent 回调路径（非 default 账户未配置时自动生成 `/wecom/<accountId>/callback`） |
+| `agent` | object | - | 兼容旧配置：`agent.corpId/corpSecret/agentId`（与顶层 Agent 字段等价） |
 | `outboundProxy` | string | - | WeCom 出站代理 |
 | `webhooks` | object | - | 命名 Webhook 目标映射（如 `{ "ops": "https://...key=xxx" }`） |
 | `accounts` | object | - | 多账户配置（支持 `accounts.<id>.bot` 独立 Bot 配置） |
 
-兼容说明：旧字段 `token` / `encodingAesKey` 仍可用于 Agent 模式（分别等价于 `callbackToken` / `callbackAesKey`），建议逐步迁移到新字段名。
+兼容说明：支持旧字段与旧结构迁移：`token` / `encodingAesKey`、`agent.*`、`dynamicAgents.*`、`dm.createAgentOnFirstMessage`、以及 inline 账户写法 `channels.wecom.<accountId>`。新配置建议优先使用 `accounts.<id>`、`callbackToken/callbackAesKey` 与 `dynamicAgent.*`。
 
 ### Bot 配置（`channels.wecom.bot`）
 
@@ -316,7 +317,7 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | 管理员 | `adminUsers` | 绕过命令白名单 |
 | 命令白名单 | `commands.enabled` + `commands.allowlist` | 限制 `/` 指令 |
 | 群聊触发 | `groupChat.enabled` + `triggerMode` + `mentionPatterns` + `triggerKeywords` | 控制群消息触发条件 |
-| 动态路由 | `dynamicAgent.*`（含 `workspaceTemplate`） | 动态 Agent + workspace bootstrap 播种 |
+| 动态路由 | `dynamicAgent.*`（兼容 `dynamicAgents.*`、`dm.createAgentOnFirstMessage`） | 动态 Agent + workspace bootstrap 播种 |
 
 ### 吞吐与稳定性
 

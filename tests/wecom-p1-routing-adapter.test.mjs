@@ -123,6 +123,66 @@ test("resolveWecomAgentRoute supports deterministic mode", () => {
   assert.equal(route.sessionKey.startsWith(`agent:${route.agentId}:wecom:alice`), true);
 });
 
+test("resolveWecomAgentRoute respects dm/group dynamic toggles", () => {
+  const runtime = createRuntimeMock({
+    agentId: "main",
+    sessionKey: "agent:main:wecom:alice",
+    matchedBy: "default",
+    accountId: "default",
+  });
+  const dmRoute = resolveWecomAgentRoute({
+    runtime,
+    cfg: {
+      agents: {
+        list: [{ id: "main" }, { id: "sales" }],
+      },
+    },
+    channel: "wecom",
+    accountId: "default",
+    sessionKey: "wecom:alice",
+    fromUser: "Alice",
+    dynamicConfig: {
+      enabled: true,
+      mode: "mapping",
+      dmCreateAgent: false,
+      userMap: { alice: "sales" },
+      groupMap: {},
+      mentionMap: {},
+      forceAgentSessionKey: true,
+    },
+  });
+  assert.equal(dmRoute.agentId, "main");
+  assert.equal(dmRoute.dynamicMatchedBy, "");
+
+  const groupRoute = resolveWecomAgentRoute({
+    runtime,
+    cfg: {
+      agents: {
+        list: [{ id: "main" }, { id: "helper" }],
+      },
+    },
+    channel: "wecom",
+    accountId: "default",
+    sessionKey: "wecom:alice",
+    fromUser: "Alice",
+    chatId: "chat_1",
+    isGroupChat: true,
+    content: "@AI助手 帮我看下",
+    mentionPatterns: ["@", "@AI助手"],
+    dynamicConfig: {
+      enabled: true,
+      mode: "mapping",
+      groupEnabled: false,
+      userMap: {},
+      groupMap: { chat_1: "helper" },
+      mentionMap: { "ai助手": "helper" },
+      forceAgentSessionKey: true,
+    },
+  });
+  assert.equal(groupRoute.agentId, "main");
+  assert.equal(groupRoute.dynamicMatchedBy, "");
+});
+
 test("buildDeterministicWecomAgentId is stable for same input", () => {
   const a = buildDeterministicWecomAgentId({
     accountId: "Sales",

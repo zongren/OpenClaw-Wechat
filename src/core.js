@@ -53,6 +53,40 @@ const DYNAMIC_AGENT_MAP_SPLITTER = /[,\n]/;
 const GROUP_CHAT_TRIGGER_MODE_SET = new Set(["direct", "mention", "keyword"]);
 const DYNAMIC_AGENT_MODE_SET = new Set(["mapping", "deterministic", "hybrid"]);
 const DYNAMIC_AGENT_ID_STRATEGY_SET = new Set(["readable-hash"]);
+const LEGACY_INLINE_ACCOUNT_RESERVED_KEYS = new Set([
+  "enabled",
+  "corpId",
+  "corpSecret",
+  "agentId",
+  "callbackToken",
+  "token",
+  "callbackAesKey",
+  "encodingAesKey",
+  "webhookPath",
+  "outboundProxy",
+  "proxyUrl",
+  "proxy",
+  "webhooks",
+  "allowFrom",
+  "allowFromRejectMessage",
+  "rejectUnauthorizedMessage",
+  "adminUsers",
+  "commands",
+  "groupChat",
+  "dynamicAgent",
+  "dynamicAgents",
+  "dm",
+  "debounce",
+  "streaming",
+  "bot",
+  "delivery",
+  "webhookBot",
+  "stream",
+  "observability",
+  "voiceTranscription",
+  "accounts",
+  "agent",
+]);
 
 const inboundMessageDedupe = new Map();
 
@@ -187,6 +221,32 @@ function pickFirstNonEmptyString(...values) {
 function normalizeAccountIdForEnv(accountId) {
   const normalized = String(accountId ?? "default").trim().toLowerCase();
   return normalized || "default";
+}
+
+function resolveLegacyInlineAccountConfig(channelConfig, accountId) {
+  if (!channelConfig || typeof channelConfig !== "object") return null;
+  const normalizedAccountId = normalizeAccountIdForEnv(accountId);
+  for (const [key, value] of Object.entries(channelConfig)) {
+    const normalizedKey = normalizeAccountIdForEnv(key);
+    if (LEGACY_INLINE_ACCOUNT_RESERVED_KEYS.has(normalizedKey)) continue;
+    if (normalizedKey !== normalizedAccountId) continue;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    return value;
+  }
+  return null;
+}
+
+function collectLegacyInlineAccountIds(channelConfig) {
+  if (!channelConfig || typeof channelConfig !== "object") return [];
+  const ids = [];
+  for (const [key, value] of Object.entries(channelConfig)) {
+    const normalizedKey = normalizeAccountIdForEnv(key);
+    if (!normalizedKey) continue;
+    if (LEGACY_INLINE_ACCOUNT_RESERVED_KEYS.has(normalizedKey)) continue;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    ids.push(normalizedKey);
+  }
+  return Array.from(new Set(ids));
 }
 
 function readAllowFromEnv(envVars, processEnv, accountId = "default") {
@@ -818,8 +878,16 @@ export function resolveWecomDynamicAgentConfig({
   envVars = {},
   processEnv = process.env,
 } = {}) {
-  const dynamicConfig =
-    channelConfig?.dynamicAgent && typeof channelConfig.dynamicAgent === "object" ? channelConfig.dynamicAgent : {};
+  const dynamicAgentConfig =
+    channelConfig?.dynamicAgent && typeof channelConfig.dynamicAgent === "object"
+      ? channelConfig.dynamicAgent
+      : {};
+  const dynamicAgentsCompatConfig =
+    channelConfig?.dynamicAgents && typeof channelConfig.dynamicAgents === "object"
+      ? channelConfig.dynamicAgents
+      : {};
+  const dynamicConfig = Object.keys(dynamicAgentConfig).length > 0 ? dynamicAgentConfig : dynamicAgentsCompatConfig;
+  const dmCompatConfig = channelConfig?.dm && typeof channelConfig.dm === "object" ? channelConfig.dm : {};
   const enabled = parseBooleanLike(
     dynamicConfig.enabled,
     parseBooleanLike(
@@ -912,6 +980,23 @@ export function resolveWecomDynamicAgentConfig({
       parseBooleanLike(processEnv?.WECOM_DYNAMIC_AGENT_ALLOW_FALLBACK, true),
     ),
   );
+  const dmCreateAgent = parseBooleanLike(
+    dynamicConfig.dmCreateAgentOnFirstMessage,
+    parseBooleanLike(
+      dmCompatConfig.createAgentOnFirstMessage,
+      parseBooleanLike(
+        envVars?.WECOM_DM_CREATE_AGENT_ON_FIRST_MESSAGE,
+        parseBooleanLike(processEnv?.WECOM_DM_CREATE_AGENT_ON_FIRST_MESSAGE, true),
+      ),
+    ),
+  );
+  const groupEnabled = parseBooleanLike(
+    dynamicConfig.groupEnabled,
+    parseBooleanLike(
+      channelConfig?.groupChat?.enabled,
+      parseBooleanLike(envVars?.WECOM_GROUP_CHAT_ENABLED, parseBooleanLike(processEnv?.WECOM_GROUP_CHAT_ENABLED, true)),
+    ),
+  );
   const userMap = parseDynamicAgentMap(
     dynamicConfig.userMap,
     envVars?.WECOM_DYNAMIC_AGENT_USER_MAP,
@@ -942,6 +1027,8 @@ export function resolveWecomDynamicAgentConfig({
     forceAgentSessionKey,
     preferMentionMap,
     allowFallbackToDefaultRoute,
+    dmCreateAgent,
+    groupEnabled,
     userMap,
     groupMap,
     mentionMap,
@@ -1086,12 +1173,14 @@ export function resolveWecomBotModeConfig({
   botConfigOverride,
 } = {}) {
   const normalizedAccountId = normalizeAccountIdForEnv(accountId);
+  const legacyInlineAccountConfig = resolveLegacyInlineAccountConfig(channelConfig, normalizedAccountId);
+  const defaultInlineAccountConfig = resolveLegacyInlineAccountConfig(channelConfig, "default");
   const accountConfig =
     normalizedAccountId === "default"
-      ? channelConfig
+      ? (defaultInlineAccountConfig ?? channelConfig)
       : channelConfig?.accounts && typeof channelConfig.accounts === "object"
-        ? channelConfig.accounts[normalizedAccountId]
-        : null;
+        ? (channelConfig.accounts[normalizedAccountId] ?? legacyInlineAccountConfig)
+        : legacyInlineAccountConfig;
   const scopedBotConfig =
     normalizedAccountId === "default"
       ? channelConfig?.bot
@@ -1135,20 +1224,28 @@ export function resolveWecomBotModeConfig({
     botConfig.enabled,
     parseBooleanLike(scopedEnvVars?.WECOM_BOT_ENABLED, parseBooleanLike(scopedProcessEnv?.WECOM_BOT_ENABLED, false)),
   );
+  const legacyAgentCompat =
+    accountConfig?.agent && typeof accountConfig.agent === "object" ? accountConfig.agent : null;
+  const legacyTopLevelBotToken = legacyAgentCompat ? pickFirstNonEmptyString(accountConfig?.token) : "";
+  const legacyTopLevelBotAesKey = legacyAgentCompat ? pickFirstNonEmptyString(accountConfig?.encodingAesKey) : "";
+  const legacyTopLevelBotWebhookPath = legacyAgentCompat ? pickFirstNonEmptyString(accountConfig?.webhookPath) : "";
   const token = pickFirstNonEmptyString(
     botConfig.token,
     botConfig.callbackToken,
+    legacyTopLevelBotToken,
     scopedEnvVars?.WECOM_BOT_TOKEN,
     scopedProcessEnv?.WECOM_BOT_TOKEN,
   );
   const encodingAesKey = pickFirstNonEmptyString(
     botConfig.encodingAesKey,
     botConfig.callbackAesKey,
+    legacyTopLevelBotAesKey,
     scopedEnvVars?.WECOM_BOT_ENCODING_AES_KEY,
     scopedProcessEnv?.WECOM_BOT_ENCODING_AES_KEY,
   );
   const webhookPath = pickFirstNonEmptyString(
     botConfig.webhookPath,
+    legacyTopLevelBotWebhookPath,
     scopedEnvVars?.WECOM_BOT_WEBHOOK_PATH,
     scopedProcessEnv?.WECOM_BOT_WEBHOOK_PATH,
     buildDefaultBotWebhookPath(normalizedAccountId),
@@ -1226,6 +1323,9 @@ export function resolveWecomBotModeAccountsConfig({
       accountIds.add(normalizeAccountIdForEnv(accountId));
     }
   }
+  for (const accountId of collectLegacyInlineAccountIds(channelConfig)) {
+    accountIds.add(normalizeAccountIdForEnv(accountId));
+  }
 
   const scopedBotIdRegex = /^WECOM_([A-Z0-9]+)_BOT_(ENABLED|TOKEN|ENCODING_AES_KEY|WEBHOOK_PATH|PLACEHOLDER_TEXT|STREAM_EXPIRE_MS|REPLY_TIMEOUT_MS|LATE_REPLY_WATCH_MS|LATE_REPLY_POLL_MS|PROXY)$/;
   const collectScopedIds = (obj) => {
@@ -1272,8 +1372,9 @@ export function resolveWecomBotModeAccountsConfig({
       normalizedAccountId === "default"
         ? channelConfig
         : channelConfig?.accounts && typeof channelConfig.accounts === "object"
-          ? channelConfig.accounts[normalizedAccountId]
-          : null;
+          ? (channelConfig.accounts[normalizedAccountId] ??
+            resolveLegacyInlineAccountConfig(channelConfig, normalizedAccountId))
+          : resolveLegacyInlineAccountConfig(channelConfig, normalizedAccountId);
     const hasBotConfigObject = Boolean(accountCfg && typeof accountCfg === "object" && accountCfg.bot && typeof accountCfg.bot === "object");
     if (
       normalizedAccountId !== "default" &&

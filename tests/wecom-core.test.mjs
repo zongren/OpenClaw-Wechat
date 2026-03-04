@@ -487,6 +487,79 @@ test("resolveWecomBotModeConfig supports account-scoped bot config and legacy ke
   assert.equal(cfg.placeholderText, "sales processing");
 });
 
+test("resolveWecomBotModeConfig supports legacy agent+top-level bot token layout", () => {
+  const cfg = core.resolveWecomBotModeConfig({
+    channelConfig: {
+      token: "legacy-bot-token",
+      encodingAesKey: "legacy-bot-aes",
+      webhookPath: "/webhooks/wecom/default",
+      agent: {
+        corpId: "ww_legacy",
+        corpSecret: "legacy-secret",
+        agentId: 1000001,
+        token: "agent-callback-token",
+        encodingAesKey: "agent-callback-aes",
+      },
+    },
+    envVars: {},
+    processEnv: {},
+  });
+  assert.equal(cfg.token, "legacy-bot-token");
+  assert.equal(cfg.encodingAesKey, "legacy-bot-aes");
+  assert.equal(cfg.webhookPath, "/webhooks/wecom/default");
+});
+
+test("resolveWecomBotModeConfig supports legacy inline account layout", () => {
+  const cfg = core.resolveWecomBotModeConfig({
+    channelConfig: {
+      sales: {
+        enabled: true,
+        token: "sales-bot-token",
+        encodingAesKey: "sales-bot-aes",
+        webhookPath: "/webhooks/wecom/sales",
+        agent: {
+          corpId: "ww_sales",
+          corpSecret: "sales-secret",
+          agentId: 1000008,
+          token: "sales-agent-token",
+          encodingAesKey: "sales-agent-aes",
+        },
+      },
+    },
+    envVars: {},
+    processEnv: {},
+    accountId: "sales",
+  });
+  assert.equal(cfg.accountId, "sales");
+  assert.equal(cfg.token, "sales-bot-token");
+  assert.equal(cfg.encodingAesKey, "sales-bot-aes");
+  assert.equal(cfg.webhookPath, "/webhooks/wecom/sales");
+});
+
+test("resolveWecomBotModeConfig supports legacy inline default account layout", () => {
+  const cfg = core.resolveWecomBotModeConfig({
+    channelConfig: {
+      default: {
+        token: "default-bot-token",
+        encodingAesKey: "default-bot-aes",
+        webhookPath: "/webhooks/wecom/default",
+        agent: {
+          corpId: "ww_default",
+          corpSecret: "default-secret",
+          agentId: 1000004,
+        },
+      },
+    },
+    envVars: {},
+    processEnv: {},
+    accountId: "default",
+  });
+  assert.equal(cfg.accountId, "default");
+  assert.equal(cfg.token, "default-bot-token");
+  assert.equal(cfg.encodingAesKey, "default-bot-aes");
+  assert.equal(cfg.webhookPath, "/webhooks/wecom/default");
+});
+
 test("resolveWecomBotModeConfig auto-assigns non-default bot webhookPath when missing", () => {
   const cfg = core.resolveWecomBotModeConfig({
     channelConfig: {
@@ -546,6 +619,29 @@ test("resolveWecomBotModeAccountsConfig includes config/env scoped bot accounts"
   assert.equal(byAccount.get("ops")?.token, "ops-token");
   assert.equal(byAccount.get("ops")?.webhookPath, "/wecom/ops/bot/callback");
   assert.equal(byAccount.has("hr"), false);
+});
+
+test("resolveWecomBotModeAccountsConfig collects legacy inline account ids", () => {
+  const configs = core.resolveWecomBotModeAccountsConfig({
+    channelConfig: {
+      ops: {
+        enabled: true,
+        token: "ops-token",
+        encodingAesKey: "ops-aes",
+        webhookPath: "/webhooks/wecom/ops",
+        agent: {
+          corpId: "ww_ops",
+          corpSecret: "ops-secret",
+          agentId: 1000006,
+        },
+      },
+    },
+    envVars: {},
+    processEnv: {},
+  });
+  const byAccount = new Map(configs.map((item) => [item.accountId, item]));
+  assert.equal(byAccount.get("ops")?.token, "ops-token");
+  assert.equal(byAccount.get("ops")?.webhookPath, "/webhooks/wecom/ops");
 });
 
 test("resolveWecomDeliveryFallbackConfig defaults and normalization", () => {
@@ -691,4 +787,31 @@ test("resolveWecomDynamicAgentConfig reads env map strings", () => {
   assert.equal(cfg.mentionMap["ai助手"], "helper");
   assert.deepEqual(cfg.adminUsers.sort(), ["admina", "adminb"]);
   assert.equal(cfg.forceAgentSessionKey, false);
+});
+
+test("resolveWecomDynamicAgentConfig supports dynamicAgents and dm compatibility keys", () => {
+  const cfg = core.resolveWecomDynamicAgentConfig({
+    channelConfig: {
+      dynamicAgents: {
+        enabled: true,
+        mode: "mapping",
+        userMap: {
+          alice: "sales",
+        },
+      },
+      dm: {
+        createAgentOnFirstMessage: false,
+      },
+      groupChat: {
+        enabled: true,
+      },
+    },
+    envVars: {},
+    processEnv: {},
+  });
+  assert.equal(cfg.enabled, true);
+  assert.equal(cfg.mode, "mapping");
+  assert.equal(cfg.dmCreateAgent, false);
+  assert.equal(cfg.groupEnabled, true);
+  assert.equal(cfg.userMap.alice, "sales");
 });

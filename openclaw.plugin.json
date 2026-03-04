@@ -12,6 +12,12 @@
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
+    "patternProperties": {
+      "^(?!(enabled|corpId|corpSecret|agentId|callbackToken|token|callbackAesKey|encodingAesKey|webhookPath|agent|bot|delivery|webhookBot|stream|observability|outboundProxy|webhooks|allowFrom|allowFromRejectMessage|adminUsers|commands|groupChat|dynamicAgent|dynamicAgents|dm|debounce|streaming|voiceTranscription|accounts)$)[A-Za-z0-9_-]+$": {
+        "type": "object",
+        "description": "兼容旧配置：inline 多账户（推荐迁移到 channels.wecom.accounts.<id>）"
+      }
+    },
     "properties": {
       "enabled": {
         "type": "boolean",
@@ -50,7 +56,7 @@
       "token": {
         "type": "string",
         "minLength": 1,
-        "description": "兼容旧配置：等价 callbackToken（不推荐新配置继续使用）",
+        "description": "兼容字段：默认等价 callbackToken；当使用 legacy agent 配置块时可作为 Bot token 使用",
         "x-sensitive": true
       },
       "callbackAesKey": {
@@ -62,13 +68,63 @@
       "encodingAesKey": {
         "type": "string",
         "minLength": 1,
-        "description": "兼容旧配置：等价 callbackAesKey（不推荐新配置继续使用）",
+        "description": "兼容字段：默认等价 callbackAesKey；当使用 legacy agent 配置块时可作为 Bot encodingAesKey 使用",
         "x-sensitive": true
       },
       "webhookPath": {
         "type": "string",
         "description": "Webhook 路径",
         "default": "/wecom/callback"
+      },
+      "agent": {
+        "type": "object",
+        "description": "兼容旧配置：自建应用凭证块（与顶层 corpId/corpSecret/agentId 等价）",
+        "additionalProperties": false,
+        "properties": {
+          "corpId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "corpSecret": {
+            "type": "string",
+            "minLength": 1,
+            "x-sensitive": true
+          },
+          "agentId": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              }
+            ]
+          },
+          "callbackToken": {
+            "type": "string",
+            "minLength": 1,
+            "x-sensitive": true
+          },
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "x-sensitive": true
+          },
+          "callbackAesKey": {
+            "type": "string",
+            "minLength": 1,
+            "x-sensitive": true
+          },
+          "encodingAesKey": {
+            "type": "string",
+            "minLength": 1,
+            "x-sensitive": true
+          },
+          "webhookPath": {
+            "type": "string"
+          }
+        }
       },
       "bot": {
         "type": "object",
@@ -443,6 +499,33 @@
             "type": "boolean",
             "default": true,
             "description": "未命中动态映射时是否回退到 OpenClaw 默认路由"
+          },
+          "dmCreateAgentOnFirstMessage": {
+            "type": "boolean",
+            "default": true,
+            "description": "私聊是否启用动态 Agent（兼容 dm.createAgentOnFirstMessage）"
+          },
+          "groupEnabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "群聊是否启用动态 Agent 路由（消息触发仍受 groupChat 配置控制）"
+          }
+        }
+      },
+      "dynamicAgents": {
+        "type": "object",
+        "description": "兼容旧配置：等价 dynamicAgent（旧项目常用命名）",
+        "additionalProperties": true
+      },
+      "dm": {
+        "type": "object",
+        "description": "兼容旧配置：私聊动态 Agent 开关",
+        "additionalProperties": false,
+        "properties": {
+          "createAgentOnFirstMessage": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否为私聊在首条消息时创建动态 Agent（等价 dynamicAgent.dmCreateAgentOnFirstMessage）"
           }
         }
       },
@@ -639,6 +722,56 @@
               "default": "/wecom/callback",
               "description": "Agent 回调路径；非 default 账户未填写时自动使用 /wecom/<accountId>/callback"
             },
+            "agent": {
+              "type": "object",
+              "description": "兼容旧配置：该账户自建应用凭证块（与账户顶层 corpId/corpSecret/agentId 等价）",
+              "additionalProperties": false,
+              "properties": {
+                "corpId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "corpSecret": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-sensitive": true
+                },
+                "agentId": {
+                  "oneOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+$"
+                    }
+                  ]
+                },
+                "callbackToken": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-sensitive": true
+                },
+                "token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-sensitive": true
+                },
+                "callbackAesKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-sensitive": true
+                },
+                "encodingAesKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "x-sensitive": true
+                },
+                "webhookPath": {
+                  "type": "string"
+                }
+              }
+            },
             "bot": {
               "type": "object",
               "description": "该账户专用 Bot 模式配置（覆盖 channels.wecom.bot）",
@@ -767,6 +900,21 @@
       "sensitive": true
     },
     "encodingAesKey": {
+      "sensitive": true
+    },
+    "agent.corpSecret": {
+      "sensitive": true
+    },
+    "agent.callbackToken": {
+      "sensitive": true
+    },
+    "agent.token": {
+      "sensitive": true
+    },
+    "agent.callbackAesKey": {
+      "sensitive": true
+    },
+    "agent.encodingAesKey": {
       "sensitive": true
     },
     "bot.token": {
