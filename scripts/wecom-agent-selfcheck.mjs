@@ -5,16 +5,59 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  collectWecomEnvAccountIds as collectSharedWecomEnvAccountIds,
   createRequireEnv as createSharedRequireEnv,
   normalizeAccountConfig as normalizeSharedAccountConfig,
   readAccountConfigFromEnv as readSharedAccountConfigFromEnv,
 } from "../src/wecom/account-config-core.js";
 import { buildDefaultAgentWebhookPath, buildLegacyAgentWebhookPath } from "../src/wecom/account-paths.js";
 
+const LEGACY_INLINE_ACCOUNT_RESERVED_KEYS = new Set([
+  "name",
+  "enabled",
+  "corpId",
+  "corpSecret",
+  "agentId",
+  "callbackToken",
+  "token",
+  "callbackAesKey",
+  "encodingAesKey",
+  "webhookPath",
+  "outboundProxy",
+  "proxyUrl",
+  "proxy",
+  "webhooks",
+  "allowFrom",
+  "allowFromRejectMessage",
+  "rejectUnauthorizedMessage",
+  "adminUsers",
+  "commandAllowlist",
+  "commandBlockMessage",
+  "commands",
+  "workspaceTemplate",
+  "groupChat",
+  "dynamicAgent",
+  "dynamicAgents",
+  "dm",
+  "debounce",
+  "streaming",
+  "bot",
+  "delivery",
+  "webhookBot",
+  "stream",
+  "observability",
+  "voiceTranscription",
+  "defaultAccount",
+  "tools",
+  "accounts",
+  "agent",
+]);
+
 function parseArgs(argv) {
   const out = {
     configPath: process.env.OPENCLAW_CONFIG_PATH || "~/.openclaw/openclaw.json",
     account: "default",
+    allAccounts: false,
     url: "",
     fromUser: "",
     content: "/status",
@@ -31,6 +74,8 @@ function parseArgs(argv) {
     } else if (arg === "--account" && next) {
       out.account = next;
       i += 1;
+    } else if (arg === "--all-accounts") {
+      out.allAccounts = true;
     } else if (arg === "--url" && next) {
       out.url = next;
       i += 1;
@@ -65,6 +110,7 @@ Usage:
 Options:
   --config <path>          OpenClaw config path (default: ~/.openclaw/openclaw.json)
   --account <id>           account id (default: default)
+  --all-accounts           run checks for all discovered Agent accounts
   --url <http-url>         override callback URL
   --from-user <userid>     simulated sender
   --content <text>         inbound text content (default: /status)
@@ -222,6 +268,29 @@ function summarize(checks) {
   };
 }
 
+function summarizeAccountReports(accountReports = []) {
+  const checks = accountReports.flatMap((report) => (Array.isArray(report?.checks) ? report.checks : []));
+  const accountsFailed = accountReports.filter((report) => report?.summary?.ok !== true).length;
+  return {
+    ...summarize(checks),
+    accountsTotal: accountReports.length,
+    accountsPassed: accountReports.length - accountsFailed,
+    accountsFailed,
+  };
+}
+
+function listLegacyInlineAccountIds(channelConfig) {
+  if (!channelConfig || typeof channelConfig !== "object") return [];
+  const ids = [];
+  for (const [rawKey, value] of Object.entries(channelConfig)) {
+    const normalizedKey = normalizeAccountId(rawKey);
+    if (!normalizedKey || LEGACY_INLINE_ACCOUNT_RESERVED_KEYS.has(normalizedKey)) continue;
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    ids.push(normalizedKey);
+  }
+  return Array.from(new Set(ids));
+}
+
 function resolveAccountFromConfig(config, accountId) {
   const normalizedId = normalizeAccountId(accountId);
   const channelConfig = config?.channels?.wecom ?? {};
@@ -271,6 +340,37 @@ function resolveAccountFromConfig(config, accountId) {
     pickFromRaw(channelConfig?.accounts?.default, "default", "channels.wecom.accounts.default") ||
     readEnv("default")
   );
+}
+
+function discoverAgentAccountIds(config) {
+  const ids = new Set();
+  const channelConfig = config?.channels?.wecom;
+  const envVars = config?.env?.vars ?? {};
+
+  if (resolveAccountFromConfig(config, "default")) ids.add("default");
+
+  const accountEntries = channelConfig?.accounts;
+  if (accountEntries && typeof accountEntries === "object") {
+    for (const key of Object.keys(accountEntries)) {
+      ids.add(normalizeAccountId(key));
+    }
+  }
+  for (const key of listLegacyInlineAccountIds(channelConfig)) {
+    ids.add(key);
+  }
+  for (const key of collectSharedWecomEnvAccountIds({ envVars, processEnv: process.env })) {
+    ids.add(normalizeAccountId(key));
+  }
+
+  if (ids.size === 0) ids.add("default");
+
+  const ordered = Array.from(ids);
+  ordered.sort((a, b) => {
+    if (a === "default" && b !== "default") return -1;
+    if (a !== "default" && b === "default") return 1;
+    return a.localeCompare(b);
+  });
+  return ordered;
 }
 
 function buildCallbackUrl({ args, account, config }) {
@@ -329,23 +429,36 @@ function reportAndExit(report, asJson = false) {
     process.exit(report.summary.ok ? 0 : 1);
     return;
   }
+  const accountReports =
+    Array.isArray(report?.accounts) && report.accounts.length > 0 ? report.accounts : [report];
   console.log("WeCom Agent selfcheck");
   console.log(`- config: ${report.configPath}`);
-  console.log(`- endpoint: ${report.endpoint}`);
-  console.log(`- account: ${report.accountId}`);
-  for (const check of report.checks) {
-    console.log(`${check.ok ? "OK " : "FAIL"} ${check.name} :: ${check.detail}`);
+  console.log(`- mode: ${report.args?.allAccounts ? "all-accounts" : `single-account (${report.args?.account || "default"})`}`);
+  for (const accountReport of accountReports) {
+    console.log(`\nAccount: ${accountReport.accountId}`);
+    console.log(`- endpoint: ${accountReport.endpoint}`);
+    for (const check of accountReport.checks) {
+      console.log(`${check.ok ? "OK " : "FAIL"} ${check.name} :: ${check.detail}`);
+    }
+    console.log(`Account summary: ${accountReport.summary.passed}/${accountReport.summary.total} passed`);
   }
-  console.log(`Summary: ${report.summary.passed}/${report.summary.total} passed`);
+  if (report.summary?.accountsTotal != null) {
+    console.log(
+      `\nSummary: accounts ${report.summary.accountsPassed}/${report.summary.accountsTotal} passed, checks ${report.summary.passed}/${report.summary.total} passed`,
+    );
+  } else {
+    console.log(`\nSummary: ${report.summary.passed}/${report.summary.total} passed`);
+  }
   process.exit(report.summary.ok ? 0 : 1);
 }
 
-async function runAgentE2E({ config, args, configPath }) {
+async function runAgentE2E({ config, args, configPath, accountId }) {
   const checks = [];
-  const account = resolveAccountFromConfig(config, args.account);
+  const account = resolveAccountFromConfig(config, accountId);
   const endpoint = buildCallbackUrl({ args, account, config });
-  const legacyAliasEndpoint = buildLegacyAliasUrl(endpoint, account?.accountId ?? args.account);
-  const fromUser = String(args.fromUser ?? "").trim() || `DxAgentSelfCheck${Date.now().toString(36).slice(-6)}`;
+  const legacyAliasEndpoint = buildLegacyAliasUrl(endpoint, account?.accountId ?? accountId);
+  const generatedSuffix = `${normalizeAccountId(accountId).replace(/[^a-z0-9]/gi, "").slice(0, 8)}${Date.now().toString(36).slice(-6)}`;
+  const fromUser = String(args.fromUser ?? "").trim() || `DxAgentSelfCheck${generatedSuffix}`;
   const content = String(args.content ?? "").trim() || "/status";
   const msgId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
@@ -354,7 +467,7 @@ async function runAgentE2E({ config, args, configPath }) {
     return {
       configPath,
       endpoint,
-      accountId: normalizeAccountId(args.account),
+      accountId: normalizeAccountId(accountId),
       checks,
       summary: summarize(checks),
     };
@@ -529,27 +642,51 @@ async function runAgentE2E({ config, args, configPath }) {
 async function main() {
   const args = parseArgs(process.argv);
   const configPath = path.resolve(expandHome(args.configPath));
+  if (args.allAccounts && String(args.url ?? "").trim()) {
+    throw new Error("--url cannot be used with --all-accounts (each account has its own webhookPath)");
+  }
   let config;
   try {
     const raw = await readFile(configPath, "utf8");
     config = JSON.parse(raw);
   } catch (err) {
     const report = {
+      args,
       configPath,
-      endpoint: "",
-      accountId: normalizeAccountId(args.account),
-      checks: [
-        makeCheck("config.load", false, `failed to load ${configPath}: ${String(err?.message || err)}`),
+      accounts: [
+        {
+          configPath,
+          endpoint: "",
+          accountId: normalizeAccountId(args.account),
+          checks: [
+            makeCheck("config.load", false, `failed to load ${configPath}: ${String(err?.message || err)}`),
+          ],
+        },
       ],
     };
-    report.summary = summarize(report.checks);
+    report.accounts[0].summary = summarize(report.accounts[0].checks);
+    report.summary = summarizeAccountReports(report.accounts);
     reportAndExit(report, args.json);
     return;
   }
 
-  const report = await runAgentE2E({ config, args, configPath });
-  report.checks.unshift(makeCheck("config.load", true, `loaded ${configPath}`));
-  report.summary = summarize(report.checks);
+  const targetAccounts = args.allAccounts ? discoverAgentAccountIds(config) : [normalizeAccountId(args.account)];
+  const accountReports = [];
+  for (const accountId of targetAccounts) {
+    // Keep output deterministic and easier to scan.
+    // eslint-disable-next-line no-await-in-loop
+    const report = await runAgentE2E({ config, args, configPath, accountId });
+    report.checks.unshift(makeCheck("config.load", true, `loaded ${configPath}`));
+    report.summary = summarize(report.checks);
+    accountReports.push(report);
+  }
+
+  const report = {
+    args,
+    configPath,
+    accounts: accountReports,
+    summary: summarizeAccountReports(accountReports),
+  };
   reportAndExit(report, args.json);
 }
 

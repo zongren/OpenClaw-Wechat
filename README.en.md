@@ -141,8 +141,8 @@ If you are loading from source path instead, use the version below with `load.pa
 openclaw gateway restart
 openclaw gateway status
 npm run wecom:selfcheck -- --all-accounts
-npm run wecom:agent:selfcheck -- --account default
-npm run wecom:bot:selfcheck -- --account default
+npm run wecom:agent:selfcheck -- --all-accounts
+npm run wecom:bot:selfcheck -- --all-accounts
 ```
 
 ## Requirements
@@ -452,6 +452,7 @@ openclaw gateway status
 openclaw status --deep
 openclaw logs --follow
 npm run wecom:selfcheck -- --all-accounts
+npm run wecom:agent:selfcheck -- --all-accounts
 npm run wecom:bot:selfcheck -- --all-accounts
 ```
 
@@ -465,7 +466,8 @@ npm run wecom:bot:selfcheck -- --all-accounts
 | `npm run test:e2e:prepare-browser` | check remote browser sandbox readiness (optional Chromium auto-install) |
 | `npm run test:e2e:collect-pdf` | collect browser-generated PDFs from remote sandbox to local artifacts |
 | `npm run wecom:selfcheck -- --all-accounts` | config/network self-check |
-| `npm run wecom:agent:selfcheck -- --account <id>` | Agent E2E self-check (URL verify + encrypted POST) |
+| `npm run wecom:agent:selfcheck -- --account <id>` | single-account Agent E2E self-check (URL verify + encrypted POST) |
+| `npm run wecom:agent:selfcheck -- --all-accounts` | multi-account Agent E2E self-check (runs URL verify + encrypted POST per account) |
 | `npm run wecom:bot:selfcheck -- --account <id>` | Bot E2E self-check (URL verify/signature/encryption/stream-refresh, supports multi-account) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback>` | remote matrix verification (Agent + Bot) |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <public-agent-callback> --bot-url <public-bot-callback> --prepare-browser --collect-pdf` | remote matrix with browser sandbox prepare + PDF artifact collection |

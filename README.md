@@ -148,6 +148,8 @@ npm install
 openclaw gateway restart
 openclaw gateway status
 npm run wecom:selfcheck -- --all-accounts
+npm run wecom:agent:selfcheck -- --all-accounts
+npm run wecom:bot:selfcheck -- --all-accounts
 ```
 
 ### Step 5. 发一条消息验证
@@ -839,7 +841,7 @@ openclaw gateway status
 openclaw status --deep
 openclaw logs --follow
 npm run wecom:selfcheck -- --all-accounts
-npm run wecom:agent:selfcheck -- --account default
+npm run wecom:agent:selfcheck -- --all-accounts
 npm run wecom:bot:selfcheck -- --all-accounts
 ```
 
@@ -855,7 +857,8 @@ npm run wecom:bot:selfcheck -- --all-accounts
 | `npm run test:e2e:prepare-browser` | 远程浏览器沙箱就绪检查（可选自动安装 Chromium） |
 | `npm run test:e2e:collect-pdf` | 收集远端浏览器沙箱中的 PDF 产物到本地 |
 | `npm run wecom:selfcheck -- --all-accounts` | 配置+网络体检 |
-| `npm run wecom:agent:selfcheck -- --account <id>` | Agent 端到端链路体检（URL 验证 + 加密 POST） |
+| `npm run wecom:agent:selfcheck -- --account <id>` | Agent 单账号端到端链路体检（URL 验证 + 加密 POST） |
+| `npm run wecom:agent:selfcheck -- --all-accounts` | Agent 多账号端到端链路体检（逐账号跑 URL 验证 + 加密 POST） |
 | `npm run wecom:bot:selfcheck -- --account <id>` | Bot 端到端链路体检（URL 验证/签名/加密/stream-refresh，支持多账户） |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <公网Agent回调> --bot-url <公网Bot回调>` | 远端矩阵验证（Agent+Bot） |
 | `npm run wecom:remote:e2e -- --mode all --agent-url <公网Agent回调> --bot-url <公网Bot回调> --prepare-browser --collect-pdf` | 远端矩阵验证（含浏览器沙箱检查与 PDF 回收） |

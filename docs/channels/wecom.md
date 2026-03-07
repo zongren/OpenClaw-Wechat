@@ -134,6 +134,7 @@ Agent E2E (URL verification + encrypted POST):
 
 ```bash
 npm run wecom:agent:selfcheck -- --account default
+npm run wecom:agent:selfcheck -- --all-accounts
 ```
 
 All accounts:

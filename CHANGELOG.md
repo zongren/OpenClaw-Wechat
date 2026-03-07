@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-03-08
+
+### Added
+- `wecom:agent:selfcheck` 新增 `--all-accounts`，可逐账号执行 Agent URL 验证与加密 POST 体检，输出统一多账号报告
+- 新增 Agent 自检回归测试，覆盖多账号发现与 `--url + --all-accounts` 冲突校验
+
+### Changed
+- README（中英文）与渠道文档补充 Agent 多账号 E2E 自检命令，文档不再只展示单账号写法
+
 ## [1.9.1] - 2026-03-08
 
 ### Fixed
