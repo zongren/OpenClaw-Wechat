@@ -10,7 +10,7 @@ OpenClaw-Wechat is an OpenClaw channel plugin for Enterprise WeChat (WeCom), wit
 
 ## Table of Contents
 
-- [Major Update (v1.8.0)](#major-update-v180)
+- [Major Update (v1.9.7)](#major-update-v197)
 - [Highlights](#highlights)
 - [Mode Comparison](#mode-comparison)
 - [5-Minute Quick Start](#5-minute-quick-start)
@@ -28,9 +28,25 @@ OpenClaw-Wechat is an OpenClaw channel plugin for Enterprise WeChat (WeCom), wit
 - [Development](#development)
 - [FAQ](#faq)
 
-## Major Update (v1.8.0)
+## Major Update (v1.9.7)
 
-This release is a major operations-focused upgrade: **WeCom now supports visual configuration in Control UI**, so you no longer need to rely on manual JSON edits only.
+This is a real capability update, not a minor patch.  
+`OpenClaw-Wechat` now has **working WeCom Bot long-connection support** in real gateway runtime.
+
+### WeCom Bot long connection
+
+| Item | Result |
+|---|---|
+| Official endpoint | `wss://openws.work.weixin.qq.com` |
+| Inbound commands | `aibot_msg_callback` / `aibot_event_callback` |
+| Outbound command | `aibot_respond_msg` |
+| Runtime | switched to `ws`, no longer blocked by built-in Node WebSocket `1006` failures |
+| Public Bot callback required | no, not in long-connection mode |
+| Verification command | `npm run wecom:bot:longconn:probe -- --json` |
+
+### Control UI and operations
+
+This release also keeps the earlier operations improvements: **WeCom supports visual configuration in Control UI**, so you no longer need to rely on manual JSON edits only.
 
 ### Visual config in Control UI
 

@@ -6,6 +6,23 @@ summary: "OpenClaw-Wechat WeCom channel plugin"
 
 This channel integrates OpenClaw with WeCom (企业微信) internal apps.
 
+## Major Update: Bot Long Connection Is Production-Ready
+
+- Official long-connection endpoint is now `wss://openws.work.weixin.qq.com`
+- Inbound commands are `aibot_msg_callback` / `aibot_event_callback`
+- Outbound reply command is `aibot_respond_msg`
+- Runtime uses `ws` instead of Node built-in `WebSocket`, fixing the `1006` failure seen on real gateways
+- Verification command:
+
+```bash
+npm run wecom:bot:longconn:probe -- --json
+```
+
+- Real gateway verification already passes:
+  - socket open
+  - subscribe authenticated
+  - ping acked
+
 ## Major Update: Visual Config in Control UI
 
 - You can now edit WeCom channel config directly in `Channels -> WeCom` (Control UI).
