@@ -12,6 +12,8 @@ const processingDeps = createPluginProcessingDeps({
 const { processBotInboundMessage, processInboundMessage, scheduleTextInboundProcessing } =
   createWecomPluginProcessingPipeline(processingDeps);
 
+services.setWecomBotLongConnectionInboundProcessor(processBotInboundMessage);
+
 const routeRuntimeDeps = createPluginRouteRuntimeDeps({
   ...services,
   processBotInboundMessage,

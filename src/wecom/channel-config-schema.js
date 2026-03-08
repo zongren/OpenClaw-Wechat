@@ -119,6 +119,33 @@ const localizedUiHints = {
     label: "Bot 回调路径",
     placeholder: "/wecom/bot/callback",
   },
+  "bot.longConnection": {
+    label: "Bot 长连接",
+    help: "企业微信智能机器人长连接（WebSocket）模式，无需公网回调地址。",
+  },
+  "bot.longConnection.enabled": {
+    label: "启用 Bot 长连接",
+  },
+  "bot.longConnection.botId": {
+    label: "BotID",
+  },
+  "bot.longConnection.secret": {
+    label: "长连接 Secret",
+    sensitive: true,
+  },
+  "bot.longConnection.url": {
+    label: "长连接地址",
+    placeholder: "wss://openws.work.weixin.qq.com",
+  },
+  "bot.longConnection.pingIntervalMs": {
+    label: "心跳间隔（毫秒）",
+  },
+  "bot.longConnection.reconnectDelayMs": {
+    label: "重连基准延迟（毫秒）",
+  },
+  "bot.longConnection.maxReconnectDelayMs": {
+    label: "最大重连延迟（毫秒）",
+  },
   "bot.replyTimeoutMs": {
     label: "Bot 回复超时（毫秒）",
   },
@@ -127,6 +154,31 @@ const localizedUiHints = {
   },
   "bot.placeholderText": {
     label: "Bot 首包占位文本",
+  },
+  "accounts.*.bot.longConnection": {
+    label: "账号 Bot 长连接",
+  },
+  "accounts.*.bot.longConnection.enabled": {
+    label: "启用该账号长连接",
+  },
+  "accounts.*.bot.longConnection.botId": {
+    label: "账号 BotID",
+  },
+  "accounts.*.bot.longConnection.secret": {
+    label: "账号长连接 Secret",
+    sensitive: true,
+  },
+  "accounts.*.bot.longConnection.url": {
+    label: "账号长连接地址",
+  },
+  "accounts.*.bot.longConnection.pingIntervalMs": {
+    label: "账号心跳间隔（毫秒）",
+  },
+  "accounts.*.bot.longConnection.reconnectDelayMs": {
+    label: "账号重连基准延迟（毫秒）",
+  },
+  "accounts.*.bot.longConnection.maxReconnectDelayMs": {
+    label: "账号最大重连延迟（毫秒）",
   },
   webhookBot: {
     label: "Webhook Bot 出站回包",

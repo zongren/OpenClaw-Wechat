@@ -61,18 +61,34 @@ function resolveBotCallbackConfig(cfg, accountId = "default") {
   const webhookPath = readString(
     accountBot?.webhookPath ?? channelBot?.webhookPath,
   );
+  const longConnection =
+    accountBot?.longConnection && typeof accountBot.longConnection === "object"
+      ? accountBot.longConnection
+      : channelBot?.longConnection && typeof channelBot.longConnection === "object"
+        ? channelBot.longConnection
+        : {};
+  const longConnectionEnabled = longConnection?.enabled === true;
+  const longConnectionBotId = readString(longConnection?.botId ?? longConnection?.botid);
+  const longConnectionSecret = readString(longConnection?.secret);
 
   return {
     enabled: enabled === true,
     token,
     aesKey,
     webhookPath,
+    longConnectionEnabled,
+    longConnectionBotId,
+    longConnectionSecret,
   };
 }
 
 function hasConfiguredBotCallback(cfg, accountId = "default") {
   const bot = resolveBotCallbackConfig(cfg, accountId);
-  return bot.enabled && Boolean(bot.token) && Boolean(bot.aesKey);
+  return (
+    bot.enabled &&
+    ((Boolean(bot.token) && Boolean(bot.aesKey)) ||
+      (bot.longConnectionEnabled && Boolean(bot.longConnectionBotId) && Boolean(bot.longConnectionSecret)))
+  );
 }
 
 function hasConfiguredAgentCredentials(account) {

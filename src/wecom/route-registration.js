@@ -70,7 +70,10 @@ export function createWecomRouteRegistrar({
 
     const signedBotConfigs = enabledBotConfigs.filter((item) => item?.token && item?.encodingAesKey);
     if (signedBotConfigs.length === 0) {
-      api.logger.warn?.("wecom(bot): enabled but missing token/encodingAesKey; route not registered");
+      const longConnectionOnly = enabledBotConfigs.some((item) => item?.longConnection?.enabled === true);
+      if (!longConnectionOnly) {
+        api.logger.warn?.("wecom(bot): enabled but missing token/encodingAesKey; route not registered");
+      }
       return false;
     }
 

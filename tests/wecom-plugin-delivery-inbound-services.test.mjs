@@ -26,6 +26,8 @@ test("createWecomPluginDeliveryInboundServices returns queue/delivery/inbound bu
     resolveWecomObservabilityPolicy: accountPolicy.resolveWecomObservabilityPolicy,
     resolveWecomBotProxyConfig: accountPolicy.resolveWecomBotProxyConfig,
     resolveWecomBotConfig: accountPolicy.resolveWecomBotConfig,
+    resolveWecomBotLongConnectionReplyContext: () => null,
+    pushWecomBotLongConnectionStreamUpdate: async () => ({ ok: false, reason: "context-missing" }),
     upsertBotResponseUrlCache: base.upsertBotResponseUrlCache,
     getBotResponseUrlCache: base.getBotResponseUrlCache,
     markBotResponseUrlUsed: base.markBotResponseUrlUsed,

@@ -51,6 +51,7 @@
     "wecom:selfcheck": "node ./scripts/wecom-selfcheck.mjs",
     "wecom:agent:selfcheck": "node ./scripts/wecom-agent-selfcheck.mjs",
     "wecom:bot:selfcheck": "node ./scripts/wecom-bot-selfcheck.mjs",
+    "wecom:bot:longconn:probe": "node ./scripts/wecom-bot-longconn-probe.mjs",
     "wecom:callback:matrix": "node ./scripts/wecom-callback-matrix.mjs",
     "wecom:remote:e2e": "node ./scripts/wecom-remote-e2e.mjs",
     "wecom:e2e:scenario": "node ./scripts/wecom-e2e-scenario.mjs",
@@ -60,6 +61,7 @@
   },
   "dependencies": {
     "fast-xml-parser": "^5.3.5",
-    "undici": "^7.22.0"
+    "undici": "^7.22.0",
+    "ws": "^8.18.3"
   }
 }

@@ -17,13 +17,13 @@ This channel integrates OpenClaw with WeCom (企业微信) internal apps.
 
 - Webhook verification: supported (requires Token + EncodingAESKey)
 - Inbound messages: text/image/voice/video/file/link (Bot quote context included)
-- Outbound: Agent mode supports text/image/voice/video/file; Bot mode supports response_url mixed and webhook fallback media
+- Outbound: Agent mode supports text/image/voice/video/file; Bot mode supports response_url mixed, WebSocket long-connection native stream, and webhook fallback media
 - Local outbound media path: supported (`/abs/path`, `file://...`, `sandbox:/...`)
 - Outbound target: supports `user` / `group(chatid)` / `party(dept)` / `tag` / `webhook` (including named webhook targets)
 - Multi-account: supported (`channels.wecom.accounts`)
 - Voice recognition: WeCom `Recognition` first; local whisper fallback supported (`channels.wecom.voiceTranscription`)
 - WeCom Doc tool: supported (`wecom_doc`, built into this plugin; create/share/auth/delete/grant-access/collaborators/collect/forms/sheet-properties)
-- Delivery fallback chain: optional (`active_stream -> response_url -> webhook_bot -> agent_push`)
+- Delivery fallback chain: optional (`long_connection -> active_stream -> response_url -> webhook_bot -> agent_push`)
 - Bot card replies: supported (`channels.wecom.bot.card`, `markdown/template_card`)
 - Direct-message policy: supported (`channels.wecom.dm.mode=open|allowlist|deny`, account-level override via `accounts.<id>.dm`)
 - Event handling: supported (`channels.wecom.events.*`, supports `enter_agent` welcome reply)
@@ -36,9 +36,11 @@ This channel integrates OpenClaw with WeCom (企业微信) internal apps.
 
 ## Callback URL
 
-Recommended:
+Recommended for Agent / Bot webhook mode:
 
 - `https://<your-domain>/wecom/callback`
+
+If you enable `channels.wecom.bot.longConnection.enabled=true`, Bot mode does not require a public callback URL.
 
 Public callback checklist:
 
@@ -143,6 +145,37 @@ Supported actions:
 - `get_form_answer`
 - `get_form_statistic`
 - `get_sheet_properties`
+
+## Bot Long Connection
+
+Supported inside the same `OpenClaw-Wechat` plugin. No separate extension is required.
+
+Minimal config:
+
+```json
+{
+  "channels": {
+    "wecom": {
+      "enabled": true,
+      "bot": {
+        "enabled": true,
+        "longConnection": {
+          "enabled": true,
+          "botId": "your-bot-id",
+          "secret": "your-bot-secret"
+        }
+      }
+    }
+  }
+}
+```
+
+Notes:
+
+- Uses official WeCom WebSocket long-connection endpoint `wss://openws.work.weixin.qq.com`.
+- The plugin sends `aibot_subscribe` after connect and keeps the socket alive with `ping`.
+- Inbound `aibot_msg_callback` / `aibot_event_callback` are normalized into the same bot runtime pipeline used by webhook mode.
+- Block streaming is pushed out as native `aibot_respond_msg`, so Bot replies can stream without `stream-refresh` polling.
 
 Default behavior:
 

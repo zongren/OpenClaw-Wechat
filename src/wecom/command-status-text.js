@@ -191,6 +191,10 @@ export function buildBotStatusText({
   const webhookBotPolicyLine = webhookBotPolicy.enabled
     ? "✅ Webhook Bot 回包已启用"
     : "ℹ️ Webhook Bot 回包未启用";
+  const longConnectionLine =
+    botConfig?.longConnection?.enabled === true
+      ? `✅ Bot 长连接已启用（BotID=${String(botConfig?.longConnection?.botId ?? "").slice(0, 8) || "n/a"}...）`
+      : "ℹ️ Bot 长连接未启用";
   const webhookTargetsLine = buildWebhookTargetStatusLine({
     aliases: allWebhookTargetAliases,
     scope: "全部账户",

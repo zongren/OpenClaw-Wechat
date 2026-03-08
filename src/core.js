@@ -44,6 +44,7 @@ const DEFAULT_COMMAND_ALLOWLIST = Object.freeze([
 const DEFAULT_ALLOW_FROM_REJECT_MESSAGE = "当前账号未授权，请联系管理员。";
 const DEFAULT_EVENT_ENTER_AGENT_WELCOME_TEXT = "你好，我是 AI 助手，直接发消息即可开始对话。";
 const DEFAULT_DELIVERY_FALLBACK_ORDER = Object.freeze([
+  "long_connection",
   "active_stream",
   "response_url",
   "webhook_bot",
@@ -532,6 +533,14 @@ function normalizeDeliveryLayerToken(value) {
   if (!normalized) return "";
   if (normalized === "active" || normalized === "stream" || normalized === "active_stream") {
     return "active_stream";
+  }
+  if (
+    normalized === "longconnection" ||
+    normalized === "long_connection" ||
+    normalized === "ws" ||
+    normalized === "websocket"
+  ) {
+    return "long_connection";
   }
   if (normalized === "responseurl" || normalized === "response_url") {
     return "response_url";
@@ -1494,6 +1503,13 @@ export function resolveWecomBotModeConfig({
     "TOKEN",
     "ENCODING_AES_KEY",
     "WEBHOOK_PATH",
+    "LONG_CONNECTION_ENABLED",
+    "LONG_CONNECTION_BOT_ID",
+    "LONG_CONNECTION_SECRET",
+    "LONG_CONNECTION_URL",
+    "LONG_CONNECTION_PING_INTERVAL_MS",
+    "LONG_CONNECTION_RECONNECT_DELAY_MS",
+    "LONG_CONNECTION_MAX_RECONNECT_DELAY_MS",
     "PLACEHOLDER_TEXT",
     "STREAM_EXPIRE_MS",
     "REPLY_TIMEOUT_MS",
@@ -1521,9 +1537,21 @@ export function resolveWecomBotModeConfig({
       }
     }
   }
+  const longConnectionConfig =
+    botConfig.longConnection && typeof botConfig.longConnection === "object" ? botConfig.longConnection : {};
+  const longConnectionEnabled = parseBooleanLike(
+    longConnectionConfig.enabled,
+    parseBooleanLike(
+      scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_ENABLED,
+      parseBooleanLike(scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_ENABLED, false),
+    ),
+  );
   const enabled = parseBooleanLike(
     botConfig.enabled,
-    parseBooleanLike(scopedEnvVars?.WECOM_BOT_ENABLED, parseBooleanLike(scopedProcessEnv?.WECOM_BOT_ENABLED, false)),
+    parseBooleanLike(
+      scopedEnvVars?.WECOM_BOT_ENABLED,
+      parseBooleanLike(scopedProcessEnv?.WECOM_BOT_ENABLED, longConnectionEnabled),
+    ),
   );
   const legacyAgentCompat =
     accountConfig?.agent && typeof accountConfig.agent === "object" ? accountConfig.agent : null;
@@ -1602,6 +1630,51 @@ export function resolveWecomBotModeConfig({
     envVars: scopedEnvVars,
     processEnv: scopedProcessEnv,
   });
+  const longConnectionBotId = pickFirstNonEmptyString(
+    longConnectionConfig.botId,
+    longConnectionConfig.botid,
+    scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_BOT_ID,
+    scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_BOT_ID,
+  );
+  const longConnectionSecret = pickFirstNonEmptyString(
+    longConnectionConfig.secret,
+    scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_SECRET,
+    scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_SECRET,
+  );
+  const resolvedLongConnectionUrl = pickFirstNonEmptyString(
+    longConnectionConfig.url,
+    scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_URL,
+    scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_URL,
+    "wss://openws.work.weixin.qq.com",
+  );
+  const longConnectionUrl =
+    resolvedLongConnectionUrl === "wss://open.work.weixin.qq.com/ws/aibot"
+      ? "wss://openws.work.weixin.qq.com"
+      : resolvedLongConnectionUrl;
+  const longConnectionPingIntervalMs = asBoundedPositiveInteger(
+    longConnectionConfig.pingIntervalMs ??
+      scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_PING_INTERVAL_MS ??
+      scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_PING_INTERVAL_MS,
+    30000,
+    10000,
+    120000,
+  );
+  const longConnectionReconnectDelayMs = asBoundedPositiveInteger(
+    longConnectionConfig.reconnectDelayMs ??
+      scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_RECONNECT_DELAY_MS ??
+      scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_RECONNECT_DELAY_MS,
+    5000,
+    1000,
+    60000,
+  );
+  const longConnectionMaxReconnectDelayMs = asBoundedPositiveInteger(
+    longConnectionConfig.maxReconnectDelayMs ??
+      scopedEnvVars?.WECOM_BOT_LONG_CONNECTION_MAX_RECONNECT_DELAY_MS ??
+      scopedProcessEnv?.WECOM_BOT_LONG_CONNECTION_MAX_RECONNECT_DELAY_MS,
+    60000,
+    5000,
+    300000,
+  );
 
   return {
     accountId: normalizedAccountId,
@@ -1615,6 +1688,15 @@ export function resolveWecomBotModeConfig({
     lateReplyWatchMs,
     lateReplyPollMs,
     card,
+    longConnection: {
+      enabled: longConnectionEnabled,
+      botId: longConnectionBotId || undefined,
+      secret: longConnectionSecret || undefined,
+      url: longConnectionUrl || "wss://openws.work.weixin.qq.com",
+      pingIntervalMs: longConnectionPingIntervalMs,
+      reconnectDelayMs: longConnectionReconnectDelayMs,
+      maxReconnectDelayMs: longConnectionMaxReconnectDelayMs,
+    },
   };
 }
 
@@ -1635,7 +1717,7 @@ export function resolveWecomBotModeAccountsConfig({
   }
 
   const scopedBotIdRegex =
-    /^WECOM_([A-Z0-9]+)_BOT_(ENABLED|TOKEN|ENCODING_AES_KEY|WEBHOOK_PATH|PLACEHOLDER_TEXT|STREAM_EXPIRE_MS|REPLY_TIMEOUT_MS|LATE_REPLY_WATCH_MS|LATE_REPLY_POLL_MS|PROXY|CARD_ENABLED|CARD_MODE|CARD_TITLE|CARD_SUBTITLE|CARD_FOOTER|CARD_MAX_CONTENT_LENGTH|CARD_RESPONSE_URL_ENABLED|CARD_WEBHOOK_BOT_ENABLED)$/;
+    /^WECOM_([A-Z0-9]+)_BOT_(ENABLED|TOKEN|ENCODING_AES_KEY|WEBHOOK_PATH|LONG_CONNECTION_ENABLED|LONG_CONNECTION_BOT_ID|LONG_CONNECTION_SECRET|LONG_CONNECTION_URL|LONG_CONNECTION_PING_INTERVAL_MS|LONG_CONNECTION_RECONNECT_DELAY_MS|LONG_CONNECTION_MAX_RECONNECT_DELAY_MS|PLACEHOLDER_TEXT|STREAM_EXPIRE_MS|REPLY_TIMEOUT_MS|LATE_REPLY_WATCH_MS|LATE_REPLY_POLL_MS|PROXY|CARD_ENABLED|CARD_MODE|CARD_TITLE|CARD_SUBTITLE|CARD_FOOTER|CARD_MAX_CONTENT_LENGTH|CARD_RESPONSE_URL_ENABLED|CARD_WEBHOOK_BOT_ENABLED)$/;
   const collectScopedIds = (obj) => {
     if (!obj || typeof obj !== "object") return;
     for (const key of Object.keys(obj)) {
@@ -1690,7 +1772,8 @@ export function resolveWecomBotModeAccountsConfig({
       !hasScopedBotEnv(normalizedAccountId) &&
       resolved.enabled !== true &&
       !resolved.token &&
-      !resolved.encodingAesKey
+      !resolved.encodingAesKey &&
+      resolved.longConnection?.enabled !== true
     ) {
       continue;
     }

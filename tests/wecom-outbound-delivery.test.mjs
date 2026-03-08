@@ -33,6 +33,9 @@ function createDeliverer(overrides = {}) {
     resolveWecomObservabilityPolicy: () => ({ enabled: false, logPayloadMeta: true }),
     resolveWecomBotProxyConfig: () => "",
     resolveWecomBotConfig: () => ({
+      longConnection: {
+        enabled: false,
+      },
       card: {
         enabled: false,
         mode: "markdown",
@@ -40,6 +43,8 @@ function createDeliverer(overrides = {}) {
         webhookBotEnabled: true,
       },
     }),
+    resolveWecomBotLongConnectionReplyContext: () => null,
+    pushWecomBotLongConnectionStreamUpdate: async () => ({ ok: false, reason: "context-missing" }),
     buildWecomBotSessionId: (fromUser) => `wecom-bot:${String(fromUser ?? "").trim().toLowerCase()}`,
     upsertBotResponseUrlCache: ({ sessionId, responseUrl }) => {
       responseUrlCache.set(sessionId, {
@@ -100,6 +105,42 @@ test("deliverBotReplyText uses active_stream when available", async () => {
   assert.equal(result.deliveryPath, "active_stream");
   assert.equal(result.finalStatus, "ok");
   assert.deepEqual(deliverer.finishedStreams, [{ streamId: "stream-ok", content: "hello", options: { msgItem: [] } }]);
+});
+
+test("deliverBotReplyText prefers long_connection when reply context exists", async () => {
+  const pushed = [];
+  const deliverer = createDeliverer({
+    resolveWecomDeliveryFallbackPolicy: () => ({
+      enabled: true,
+      order: ["long_connection", "active_stream", "agent_push"],
+    }),
+    resolveWecomBotLongConnectionReplyContext: () => ({
+      accountId: "default",
+      sessionId: "wecom-bot:dingxiang",
+      streamId: "stream-longconn",
+      msgId: "msg-001",
+    }),
+    pushWecomBotLongConnectionStreamUpdate: async (payload) => {
+      pushed.push(payload);
+      return { ok: true, mode: "long_connection" };
+    },
+  });
+
+  const result = await deliverer.deliverBotReplyText({
+    api: createApiMock(),
+    fromUser: "dingxiang",
+    accountId: "default",
+    sessionId: "wecom-bot:dingxiang",
+    streamId: "stream-longconn",
+    text: "hello over ws",
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.layer, "long_connection");
+  assert.equal(pushed.length, 1);
+  assert.equal(pushed[0].streamId, "stream-longconn");
+  assert.equal(pushed[0].content, "hello over ws");
+  assert.equal(pushed[0].finish, true);
 });
 
 test("deliverBotReplyText falls back to agent_push with media links", async () => {

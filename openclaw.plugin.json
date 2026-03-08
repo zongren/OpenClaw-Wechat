@@ -154,6 +154,55 @@
             "default": "/wecom/bot/callback",
             "description": "Bot 模式 webhook 路径"
           },
+          "longConnection": {
+            "type": "object",
+            "description": "企业微信智能机器人长连接（WebSocket）配置",
+            "additionalProperties": false,
+            "properties": {
+              "enabled": {
+                "type": "boolean",
+                "default": false,
+                "description": "是否启用 Bot 长连接模式"
+              },
+              "botId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "企业微信智能机器人 BotID"
+              },
+              "secret": {
+                "type": "string",
+                "minLength": 1,
+                "description": "企业微信智能机器人 Secret",
+                "x-sensitive": true
+              },
+              "url": {
+                "type": "string",
+                "default": "wss://openws.work.weixin.qq.com",
+                "description": "企业微信智能机器人长连接地址"
+              },
+              "pingIntervalMs": {
+                "type": "integer",
+                "minimum": 10000,
+                "maximum": 120000,
+                "default": 30000,
+                "description": "长连接心跳间隔（毫秒）"
+              },
+              "reconnectDelayMs": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 60000,
+                "default": 5000,
+                "description": "长连接重连基准延迟（毫秒）"
+              },
+              "maxReconnectDelayMs": {
+                "type": "integer",
+                "minimum": 5000,
+                "maximum": 300000,
+                "default": 60000,
+                "description": "长连接最大重连延迟（毫秒）"
+              }
+            }
+          },
           "placeholderText": {
             "type": "string",
             "default": "消息已收到，正在处理中，请稍等片刻。",
@@ -948,6 +997,55 @@
                   "default": "/wecom/bot/callback",
                   "description": "Bot 模式 webhook 路径；非 default 账户未填写时自动使用 /wecom/<accountId>/bot/callback"
                 },
+                "longConnection": {
+                  "type": "object",
+                  "description": "该账户专用企业微信智能机器人长连接（WebSocket）配置",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "是否启用该账户 Bot 长连接模式"
+                    },
+                    "botId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "该账户企业微信智能机器人 BotID"
+                    },
+                    "secret": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "该账户企业微信智能机器人 Secret",
+                      "x-sensitive": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "default": "wss://openws.work.weixin.qq.com",
+                      "description": "该账户企业微信智能机器人长连接地址"
+                    },
+                    "pingIntervalMs": {
+                      "type": "integer",
+                      "minimum": 10000,
+                      "maximum": 120000,
+                      "default": 30000,
+                      "description": "该账户长连接心跳间隔（毫秒）"
+                    },
+                    "reconnectDelayMs": {
+                      "type": "integer",
+                      "minimum": 1000,
+                      "maximum": 60000,
+                      "default": 5000,
+                      "description": "该账户长连接重连基准延迟（毫秒）"
+                    },
+                    "maxReconnectDelayMs": {
+                      "type": "integer",
+                      "minimum": 5000,
+                      "maximum": 300000,
+                      "default": 60000,
+                      "description": "该账户长连接最大重连延迟（毫秒）"
+                    }
+                  }
+                },
                 "placeholderText": {
                   "type": "string",
                   "default": "消息已收到，正在处理中，请稍等片刻。",
@@ -1178,6 +1276,9 @@
     "bot.encodingAesKey": {
       "sensitive": true
     },
+    "bot.longConnection.secret": {
+      "sensitive": true
+    },
     "accounts.*.bot.token": {
       "sensitive": true
     },
@@ -1188,6 +1289,9 @@
       "sensitive": true
     },
     "accounts.*.bot.callbackAesKey": {
+      "sensitive": true
+    },
+    "accounts.*.bot.longConnection.secret": {
       "sensitive": true
     },
     "webhookBot.key": {

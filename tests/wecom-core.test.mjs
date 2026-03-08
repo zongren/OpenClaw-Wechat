@@ -798,6 +798,27 @@ test("resolveWecomBotModeConfig auto-assigns non-default bot webhookPath when mi
   assert.equal(cfg.webhookPath, "/wecom/sales/bot/callback");
 });
 
+test("resolveWecomBotModeConfig resolves bot long connection config and enables bot mode", () => {
+  const cfg = core.resolveWecomBotModeConfig({
+    channelConfig: {
+      bot: {
+        longConnection: {
+          enabled: true,
+          botId: "bot-123",
+          secret: "secret-xyz",
+        },
+      },
+    },
+    envVars: {},
+    processEnv: {},
+  });
+  assert.equal(cfg.enabled, true);
+  assert.equal(cfg.longConnection.enabled, true);
+  assert.equal(cfg.longConnection.botId, "bot-123");
+  assert.equal(cfg.longConnection.secret, "secret-xyz");
+  assert.equal(cfg.longConnection.url, "wss://openws.work.weixin.qq.com");
+});
+
 test("resolveWecomBotModeAccountsConfig includes config/env scoped bot accounts", () => {
   const configs = core.resolveWecomBotModeAccountsConfig({
     channelConfig: {
@@ -890,7 +911,7 @@ test("resolveWecomDeliveryFallbackConfig defaults and normalization", () => {
     processEnv: {},
   });
   assert.equal(defaults.enabled, false);
-  assert.deepEqual(defaults.order, ["active_stream", "response_url", "webhook_bot", "agent_push"]);
+  assert.deepEqual(defaults.order, ["long_connection", "active_stream", "response_url", "webhook_bot", "agent_push"]);
 
   const configured = core.resolveWecomDeliveryFallbackConfig({
     channelConfig: {

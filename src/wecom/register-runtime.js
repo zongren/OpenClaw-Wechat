@@ -9,6 +9,7 @@ export function createWecomRegisterRuntime({
   resolveWecomDynamicAgentPolicy,
   resolveWecomBotConfig,
   resolveWecomBotConfigs,
+  syncWecomBotLongConnections,
   listEnabledWecomAccounts,
   getWecomConfig,
   wecomChannelPlugin,
@@ -38,6 +39,9 @@ export function createWecomRegisterRuntime({
   }
   if (resolveWecomBotConfigs != null && typeof resolveWecomBotConfigs !== "function") {
     throw new Error("createWecomRegisterRuntime: resolveWecomBotConfigs must be a function");
+  }
+  if (syncWecomBotLongConnections != null && typeof syncWecomBotLongConnections !== "function") {
+    throw new Error("createWecomRegisterRuntime: syncWecomBotLongConnections must be a function");
   }
   if (listEnabledWecomAccounts != null && typeof listEnabledWecomAccounts !== "function") {
     throw new Error("createWecomRegisterRuntime: listEnabledWecomAccounts must be a function");
@@ -95,6 +99,14 @@ export function createWecomRegisterRuntime({
         `wecom: webhookBot fallback enabled (${webhookBotPolicy.url || webhookBotPolicy.key ? "configured" : "missing-url"})`,
       );
     }
+    let longConnectionStarted = 0;
+    if (typeof syncWecomBotLongConnections === "function") {
+      const longConnectionResult = syncWecomBotLongConnections(api);
+      longConnectionStarted = Number(longConnectionResult?.started) || 0;
+      if (longConnectionStarted > 0) {
+        api.logger.info?.(`wecom(bot-longconn): enabled accounts=${longConnectionStarted}`);
+      }
+    }
     if (observabilityPolicy.enabled) {
       api.logger.info?.(
         `wecom: observability enabled (payloadMeta=${observabilityPolicy.logPayloadMeta ? "on" : "off"})`,
@@ -123,7 +135,7 @@ export function createWecomRegisterRuntime({
     }
     const botRouteRegistered = wecomRouteRegistrar.registerWecomBotWebhookRoute(api);
     const webhookGroups = wecomRouteRegistrar.registerWecomAgentWebhookRoutes(api);
-    if (webhookGroups.size === 0 && !botRouteRegistered) {
+    if (webhookGroups.size === 0 && !botRouteRegistered && longConnectionStarted === 0) {
       api.logger.warn?.("wecom: no enabled account with valid config found; webhook route not registered");
       return;
     }

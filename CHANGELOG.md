@@ -7,12 +7,25 @@ All notable changes to this project will be documented in this file.
 ## [1.9.6] - 2026-03-08
 
 ### Added
+- 新增企业微信智能机器人长连接（WebSocket）支持：内置 `aibot_subscribe`、`aibot_msg_callback`、`aibot_respond_msg` 接入，不再依赖公网 Bot 回调地址
+- 新增 `bot.longConnection` / `accounts.<id>.bot.longConnection` 配置 schema、Control UI 中文字段说明与敏感字段标记
+- 新增长连接管理器与回归测试，覆盖订阅、消息推送、占位回包与最终流式回包
+- 新增长连接认证探针 `npm run wecom:bot:longconn:probe`，可验证握手、鉴权与心跳确认
 - 在 5 分钟极速上手（中英文）增加 Agent 模式 Trusted IP 注意项，明确“能收消息但不回复”的常见根因之一
 - 新增 `docs/iteration-plan-1.9.6.md`，沉淀本次补丁目标、验收标准与下一迭代建议
 
 ### Changed
+- Bot 回包链路新增 `long_connection` 层，默认兜底顺序调整为 `long_connection -> active_stream -> response_url -> webhook_bot -> agent_push`
+- 长连接默认地址改为官方入口 `wss://openws.work.weixin.qq.com`，并兼容旧地址配置自动迁移
+- 长连接运行时切换为 `ws`，对齐企业微信官方 SDK 实现
+- 长连接会话中的 block 输出现在直接推送到企业微信，不再只保存在本地 stream 状态
+- 渠道状态现在可识别长连接在线状态，Bot-only + longConnection 配置会被视为有效 Bot 账户
 - 故障排查与 FAQ（中英文）补充 Trusted IP 场景，覆盖“日志看似正常但无回复”路径
 - 更新 `docs/compare-sunnoy-gap.md` 为当前阶段差距快照，标注已追平项与后续建议项
+
+### Fixed
+- 修复长连接会话错误落入 `active_stream` 本地成功路径时可能“本地结束但用户无感知”的问题
+- 修复旧版长连接协议地址、命令字和 Node 内置 WebSocket 导致的 `1006` 握手失败问题
 
 ## [1.9.5] - 2026-03-08
 

@@ -42,6 +42,7 @@ export function createPluginProcessingDeps(context = {}) {
       isDispatchTimeoutError: context.isDispatchTimeoutError,
       queueBotStreamMedia: context.queueBotStreamMedia,
       updateBotStream: context.updateBotStream,
+      pushWecomBotLongConnectionStreamUpdate: context.pushWecomBotLongConnectionStreamUpdate,
       isAgentFailureText: context.isAgentFailureText,
       scheduleTempFileCleanup: context.scheduleTempFileCleanup,
       ACTIVE_LATE_REPLY_WATCHERS: context.ACTIVE_LATE_REPLY_WATCHERS,

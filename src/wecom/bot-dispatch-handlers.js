@@ -19,11 +19,14 @@ export function normalizeWecomBotBlockText(currentText = "", incomingBlock = "")
 export function createWecomBotDispatchHandlers({
   api,
   streamId,
+  sessionId,
   state,
+  accountId = "default",
   hasBotStream,
   normalizeWecomBotOutboundMediaUrls,
   queueBotStreamMedia,
   updateBotStream,
+  pushWecomBotLongConnectionStreamUpdate,
   markdownToWecomText,
   isAgentFailureText,
   safeDeliverReply,
@@ -76,6 +79,22 @@ export function createWecomBotDispatchHandlers({
           finished: false,
           thinkingContent: blockState.thinkingContent,
         });
+        if (typeof pushWecomBotLongConnectionStreamUpdate === "function") {
+          try {
+            await pushWecomBotLongConnectionStreamUpdate({
+              accountId,
+              sessionId,
+              streamId,
+              content: blockState.visibleText,
+              finish: false,
+              thinkingContent: blockState.thinkingContent,
+            });
+          } catch (err) {
+            logger?.warn?.(
+              `wecom(bot-longconn): failed to push block stream update: ${String(err?.message || err)}`,
+            );
+          }
+        }
         return;
       }
       if (info.kind !== "final") return;

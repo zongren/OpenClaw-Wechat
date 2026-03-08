@@ -32,6 +32,8 @@ export function createWecomBotReplyDeliverer({
   resolveWecomObservabilityPolicy,
   resolveWecomBotProxyConfig,
   resolveWecomBotConfig,
+  resolveWecomBotLongConnectionReplyContext,
+  pushWecomBotLongConnectionStreamUpdate,
   buildWecomBotSessionId,
   upsertBotResponseUrlCache,
   getBotResponseUrlCache,
@@ -60,6 +62,8 @@ export function createWecomBotReplyDeliverer({
   assertFunction("resolveWecomObservabilityPolicy", resolveWecomObservabilityPolicy);
   assertFunction("resolveWecomBotProxyConfig", resolveWecomBotProxyConfig);
   assertFunction("resolveWecomBotConfig", resolveWecomBotConfig);
+  assertFunction("resolveWecomBotLongConnectionReplyContext", resolveWecomBotLongConnectionReplyContext);
+  assertFunction("pushWecomBotLongConnectionStreamUpdate", pushWecomBotLongConnectionStreamUpdate);
   assertFunction("buildWecomBotSessionId", buildWecomBotSessionId);
   assertFunction("upsertBotResponseUrlCache", upsertBotResponseUrlCache);
   assertFunction("getBotResponseUrlCache", getBotResponseUrlCache);
@@ -210,13 +214,55 @@ export function createWecomBotReplyDeliverer({
       });
     }
     const cachedResponseUrl = getBotResponseUrlCache(normalizedSessionId);
+    const longConnectionContext = resolveWecomBotLongConnectionReplyContext({
+      accountId: normalizedAccountId,
+      sessionId: normalizedSessionId,
+      streamId,
+    });
     const traceId = createDeliveryTraceId("wecom-bot");
     const router = createWecomDeliveryRouter({
       logger: api.logger,
       fallbackConfig: fallbackPolicy,
       observability: observabilityPolicy,
       handlers: {
+        long_connection: async ({ text: content }) => {
+          let streamMsgItem = [];
+          let fallbackMediaUrls = normalizedMediaUrls;
+          if (normalizedMediaUrls.length > 0) {
+            const processed = await buildActiveStreamMsgItems({
+              mediaUrls: normalizedMediaUrls,
+              mediaType,
+              fetchMediaFromUrl,
+              proxyUrl: botProxyUrl,
+              logger: api.logger,
+            });
+            streamMsgItem = processed.msgItem;
+            fallbackMediaUrls = processed.fallbackUrls;
+          }
+          let streamContent = String(content ?? "").trim();
+          if (!streamContent && fallbackMediaUrls.length > 0) {
+            streamContent = fallbackText;
+          }
+          if (fallbackMediaUrls.length > 0) {
+            streamContent = `${streamContent}\n\n媒体链接：\n${fallbackMediaUrls.join("\n")}`.trim();
+          }
+          if (!streamContent && !streamMsgItem.length && !String(thinkingContent ?? "").trim()) {
+            streamContent = fallbackText;
+          }
+          return pushWecomBotLongConnectionStreamUpdate({
+            accountId: normalizedAccountId,
+            sessionId: normalizedSessionId,
+            streamId,
+            content: streamContent,
+            finish: true,
+            msgItem: streamMsgItem,
+            thinkingContent,
+          });
+        },
         active_stream: async ({ text: content }) => {
+          if (longConnectionContext) {
+            return { ok: false, reason: "long-connection-context" };
+          }
           return deliverActiveStreamReply({
             streamId,
             sessionId: normalizedSessionId,

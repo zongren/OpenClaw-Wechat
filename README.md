@@ -143,6 +143,7 @@ npm install
 |---|---|---|---|
 | Agent（自建应用） | `/wecom/callback` | 自建应用 API 接收 | `corpId/corpSecret/agentId/callbackToken/callbackAesKey` |
 | Bot（智能机器人） | `/wecom/bot/callback` | 智能机器人 **API 模式** | `bot.enabled/token/encodingAesKey` |
+| Bot（智能机器人长连接） | 无需公网回调 | 智能机器人 **长连接模式** | `bot.enabled/bot.longConnection.enabled/bot.longConnection.botId/bot.longConnection.secret` |
 
 > Agent 模式补充（重要）：在企业微信自建应用后台请配置**可信 IP**，把 OpenClaw 网关实际出网 IP 加入白名单。否则可能出现“能收到消息但不回复”。
 
@@ -173,6 +174,7 @@ npm run wecom:bot:selfcheck -- --all-accounts
 | 企业微信入站消息处理 | ✅ | 文本、图片、语音、链接、文件/视频（Agent + Bot） |
 | AI 自动回复 | ✅ | 接入 OpenClaw Runtime，自动路由 Agent |
 | Bot 原生 stream 协议 | ✅ | `msgtype=stream` 刷新与增量回包 |
+| Bot 长连接（WebSocket） | ✅ | 原生 `aibot_subscribe` / `aibot_msg_callback` / `aibot_respond_msg` |
 | Bot 卡片回包 | ✅ | 支持 `markdown/template_card`，失败自动降级文本 |
 | 多账户 | ✅ | `channels.wecom.accounts.<id>` |
 | 发送者授权控制 | ✅ | `allowFrom` + 账户级覆盖 |
@@ -365,6 +367,26 @@ Windows 对应关系也是同一套逻辑，例如：
 }
 ```
 
+#### Bot 长连接最小可用（无需公网 Bot 回调）
+
+```json
+{
+  "channels": {
+    "wecom": {
+      "enabled": true,
+      "bot": {
+        "enabled": true,
+        "longConnection": {
+          "enabled": true,
+          "botId": "your-bot-id",
+          "secret": "your-bot-secret"
+        }
+      }
+    }
+  }
+}
+```
+
 ### 3) 启动与验证
 
 ```bash
@@ -544,10 +566,30 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | `replyTimeoutMs` | integer | `90000` | Bot 等待模型回包超时（15s~10m） |
 | `lateReplyWatchMs` | integer | `180000` | Bot 超时后异步补发观察窗口（30s~10m） |
 | `lateReplyPollMs` | integer | `2000` | Bot 异步补发轮询间隔（500ms~10s） |
+| `longConnection` | object | - | 企业微信智能机器人长连接（WebSocket）配置 |
 | `card` | object | 见下方 | Bot 卡片回包策略（`response_url` / `webhook_bot`） |
 
 > 重要限制：企业微信官方 Bot 在群聊里通常仅对 `@机器人` 消息触发回调。  
 > 因此 Bot 模式下即使配置 `groupChat.triggerMode=direct/keyword`，也会按 `mention` 处理（插件会输出告警）。
+
+#### Bot 长连接配置（`channels.wecom.bot.longConnection`）
+
+| 键 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| `enabled` | boolean | `false` | 启用企业微信智能机器人长连接 |
+| `botId` | string | - | 企业微信智能机器人 BotID |
+| `secret` | string | - | 企业微信智能机器人 Secret（敏感） |
+| `url` | string | `wss://openws.work.weixin.qq.com` | 官方长连接地址 |
+| `pingIntervalMs` | integer | `30000` | 心跳 `ping` 间隔 |
+| `reconnectDelayMs` | integer | `5000` | 首次重连延迟 |
+| `maxReconnectDelayMs` | integer | `60000` | 指数退避最大重连延迟 |
+
+说明：
+
+- 长连接模式下不需要暴露公网 Bot 回调地址。
+- 插件会在网关启动后主动连接 `wss://openws.work.weixin.qq.com`，并自动发送 `aibot_subscribe`。
+- 入站消息与事件分别使用 `aibot_msg_callback` / `aibot_event_callback`，统一接入现有 Bot 处理链路。
+- 模型 block 输出会直接通过长连接发送 `aibot_respond_msg`，不是被动等待 `stream-refresh` 拉取。
 
 #### Bot 卡片配置（`channels.wecom.bot.card`）
 
@@ -577,6 +619,7 @@ node ./scripts/wecom-bot-selfcheck.mjs --help
 | `replyTimeoutMs` | integer | `90000` | Bot 等待模型回包超时 |
 | `lateReplyWatchMs` | integer | `180000` | 超时后异步补发观察窗口 |
 | `lateReplyPollMs` | integer | `2000` | 异步补发轮询间隔 |
+| `longConnection` | object | - | 该账户专用长连接配置（覆盖全局 `bot.longConnection`） |
 | `card` | object | - | 该账户专用卡片回包配置（覆盖全局 `bot.card`） |
 
 ### 多账户文档工具覆盖（`channels.wecom.accounts.<id>.tools`）

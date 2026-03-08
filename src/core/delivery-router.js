@@ -1,4 +1,5 @@
 const DEFAULT_FALLBACK_ORDER = Object.freeze([
+  "long_connection",
   "active_stream",
   "response_url",
   "webhook_bot",
@@ -14,6 +15,7 @@ function normalizeLayerName(layer) {
     .replace(/[-\s]+/g, "_");
   if (!normalized) return "";
   if (normalized === "active" || normalized === "stream") return "active_stream";
+  if (normalized === "longconnection" || normalized === "ws" || normalized === "websocket") return "long_connection";
   if (normalized === "responseurl") return "response_url";
   if (normalized === "webhook" || normalized === "webhookbot") return "webhook_bot";
   if (normalized === "agent" || normalized === "agentpush") return "agent_push";

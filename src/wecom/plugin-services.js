@@ -42,6 +42,7 @@ import { createWecomPluginBaseServices } from "./plugin-base-services.js";
 import { createWecomPluginAccountPolicyServices } from "./plugin-account-policy-services.js";
 import { createWecomPluginDeliveryInboundServices } from "./plugin-delivery-inbound-services.js";
 import { createWecomBotInboundContentBuilder } from "./bot-inbound-content.js";
+import { createWecomBotLongConnectionManager } from "./bot-long-connection-manager.js";
 import { createWecomDocToolRegistrar } from "./doc-tool.js";
 import { markdownToWecomText } from "./text-format.js";
 import {
@@ -92,6 +93,8 @@ export function createWecomPluginServices({
     resolveWecomObservabilityPolicy: accountPolicy.resolveWecomObservabilityPolicy,
     resolveWecomBotProxyConfig: accountPolicy.resolveWecomBotProxyConfig,
     resolveWecomBotConfig: accountPolicy.resolveWecomBotConfig,
+    resolveWecomBotLongConnectionReplyContext: (...args) => wecomBotLongConnectionManager.resolveReplyContext(...args),
+    pushWecomBotLongConnectionStreamUpdate: (...args) => wecomBotLongConnectionManager.pushStreamUpdate(...args),
     upsertBotResponseUrlCache: base.upsertBotResponseUrlCache,
     getBotResponseUrlCache: base.getBotResponseUrlCache,
     markBotResponseUrlUsed: base.markBotResponseUrlUsed,
@@ -131,6 +134,22 @@ export function createWecomPluginServices({
     fetchWithRetry: base.fetchWithRetry,
     getWecomAccessToken: base.getWecomAccessToken,
   });
+  const wecomBotLongConnectionManager = createWecomBotLongConnectionManager({
+    attachWecomProxyDispatcher: base.attachWecomProxyDispatcher,
+    resolveWecomBotConfigs: accountPolicy.resolveWecomBotConfigs,
+    resolveWecomBotProxyConfig: accountPolicy.resolveWecomBotProxyConfig,
+    parseWecomBotInboundMessage,
+    describeWecomBotParsedMessage,
+    buildWecomBotSessionId,
+    createBotStream: base.createBotStream,
+    upsertBotResponseUrlCache: base.upsertBotResponseUrlCache,
+    markInboundMessageSeen,
+    messageProcessLimiter: base.messageProcessLimiter,
+    executeInboundTaskWithSessionQueue: deliveryInbound.executeInboundTaskWithSessionQueue,
+    deliverBotReplyText: deliveryInbound.deliverBotReplyText,
+    recordInboundMetric: base.recordInboundMetric,
+    recordRuntimeErrorMetric: base.recordRuntimeErrorMetric,
+  });
 
   return {
     ...base,
@@ -138,6 +157,12 @@ export function createWecomPluginServices({
     ...deliveryInbound,
     buildBotInboundContent,
     registerWecomDocTools,
+    setWecomBotLongConnectionInboundProcessor: wecomBotLongConnectionManager.setProcessBotInboundHandler,
+    resolveWecomBotLongConnectionReplyContext: wecomBotLongConnectionManager.resolveReplyContext,
+    pushWecomBotLongConnectionStreamUpdate: wecomBotLongConnectionManager.pushStreamUpdate,
+    syncWecomBotLongConnections: wecomBotLongConnectionManager.sync,
+    stopAllWecomBotLongConnections: wecomBotLongConnectionManager.stopAll,
+    getWecomBotLongConnectionState: wecomBotLongConnectionManager.getConnectionState,
     ACTIVE_LATE_REPLY_WATCHERS,
     WECOM_TEMP_DIR_NAME,
     normalizePluginHttpPath,
