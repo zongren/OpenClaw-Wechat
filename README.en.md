@@ -693,6 +693,12 @@ Most likely the bot was created in non-API mode. Re-create as **API mode**.
 ### Why can image recognition fail intermittently?
 WeCom image URLs can return non-standard content type or encrypted media stream. The plugin now includes content sniffing and decrypt fallback.
 
+### The app can receive messages but never replies (logs look normal). Why?
+Check whether **Trusted IP** is configured for the WeCom self-built app.
+If trusted IP is missing, WeCom may silently block part of the send/callback chain and it looks like “received but no reply”.
+
+Fix: add the actual egress IP of your OpenClaw gateway to the app's Trusted IP list, then retry.
+
 ### Can Telegram and WeCom affect each other?
 They are logically independent, but can conflict via shared webhook paths, multi-process gateway races, or loose plugin loading policy.
 

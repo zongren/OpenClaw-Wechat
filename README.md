@@ -1047,6 +1047,7 @@ openclaw system event --mode now --text "立即执行下一轮运维心跳"
 | `curl https://域名/wecom/callback` 返回 `401/403` | Gateway Auth / Zero Trust / 反代鉴权 | webhook 路径被要求登录或带 Token | 对 `/wecom/*`、`/webhooks/app*`、`/webhooks/wecom*` 做认证豁免 |
 | `curl https://域名/wecom/callback` 返回 `301/302/307/308` | 登录跳转 / SSO / 前端路由 | webhook 被重定向到登录页或前端 | 让 webhook 路径直接反代到 OpenClaw 网关 |
 | 能收到消息但不回复 | `openclaw gateway status` + `openclaw logs --follow` | 模型超时、会话排队、权限策略拦截 | 查看 dispatch/allowFrom/commands 日志 |
+| 能收到消息但不回复（已确认本地日志正常） | 企业微信自建应用后台 -> 开发设置 | 未配置“可信 IP”，企业微信拒绝部分回调/发送链路 | 在应用里补充 OpenClaw 出网 IP 到可信 IP 列表（保存后重试） |
 | Bot 图片识别失败 | `wecom(bot): failed to fetch image url` | URL 失效、返回非图像流 | 已支持 octet-stream+解密兜底，先升级到最新版本 |
 | 语音转写失败 | `wecom: voice transcription failed` | 本地命令或模型路径错误 | 检查 `command`、`modelPath`、`ffmpeg` |
 | 启动出现账号体检告警 | `wecom: account diagnosis ...` | 多账号 Token/Agent/路径存在冲突风险 | 按日志 `code` 与账户列表调整配置，优先处理 `warn` 级别 |
@@ -1109,10 +1110,15 @@ npm run wecom:bot:selfcheck -- --all-accounts
 ### Q2：为什么图片偶发识别失败？
 企业微信可能返回非标准 `content-type` 或加密媒体流。插件已增加类型识别与解密兜底；仍失败时请查看日志中的 header/下载错误。
 
-### Q3：Telegram 和 WeCom 会互相影响吗？
+### Q3：能收消息但一直不回复，日志看起来也正常？
+优先检查企业微信自建应用后台是否配置了**可信 IP**。如果可信 IP 缺失，企业微信可能在发送/回调链路上做安全拦截，表现为“能收到但不回”。
+
+建议：把 OpenClaw 网关实际出网 IP 加入该应用的可信 IP 列表，保存后重试。
+
+### Q4：Telegram 和 WeCom 会互相影响吗？
 理论上独立；实战中若复用 webhook 路径、多进程抢占、或 `plugins.allow` 未收紧，会出现干扰。按“并存建议”配置可大幅降低风险。
 
-### Q4：支持个人微信吗？
+### Q5：支持个人微信吗？
 支持企业微信场景下的“微信插件入口”（个人微信扫码进入企业应用对话），不等同于“个人微信网页版协议”。
 
 ### Q4.1：为什么 Bot 模式在“微信插件入口”里看不到机器人联系人？
