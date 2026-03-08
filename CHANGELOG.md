@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.9.6] - 2026-03-08
+## [1.9.7] - 2026-03-08
 
 ### Added
 - 新增企业微信智能机器人长连接（WebSocket）支持：内置 `aibot_subscribe`、`aibot_msg_callback`、`aibot_respond_msg` 接入，不再依赖公网 Bot 回调地址
