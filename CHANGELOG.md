@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.9.6] - 2026-03-08
+
+### Added
+- 在 5 分钟极速上手（中英文）增加 Agent 模式 Trusted IP 注意项，明确“能收消息但不回复”的常见根因之一
+- 新增 `docs/iteration-plan-1.9.6.md`，沉淀本次补丁目标、验收标准与下一迭代建议
+
+### Changed
+- 故障排查与 FAQ（中英文）补充 Trusted IP 场景，覆盖“日志看似正常但无回复”路径
+- 更新 `docs/compare-sunnoy-gap.md` 为当前阶段差距快照，标注已追平项与后续建议项
+
 ## [1.9.5] - 2026-03-08
 
 ### Added
