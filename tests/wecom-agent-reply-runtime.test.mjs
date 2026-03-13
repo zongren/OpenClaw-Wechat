@@ -10,6 +10,7 @@ test("createWecomAgentDispatchState returns initialized mutable state", () => {
   const state = createWecomAgentDispatchState();
   assert.equal(state.hasDeliveredReply, false);
   assert.equal(state.hasDeliveredPartialReply, false);
+  assert.equal(state.hasDeliveredFinalText, false);
   assert.equal(state.hasSentProgressNotice, false);
   assert.equal(state.blockTextFallback, "");
   assert.equal(state.streamChunkBuffer, "");

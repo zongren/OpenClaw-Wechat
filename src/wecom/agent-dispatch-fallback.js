@@ -16,6 +16,9 @@ export async function finalizeWecomAgentVisiblePartialReply({
   assertFunction("flushStreamingBuffer", flushStreamingBuffer);
   if (state.hasDeliveredReply || !state.hasDeliveredPartialReply) return false;
 
+  api?.logger?.info?.(
+    `wecom: finalizing partial reply (${reason}), streamChunkSentCount=${state.streamChunkSentCount}`,
+  );
   await flushStreamingBuffer({ force: true, reason });
   await state.streamChunkSendChain;
   state.hasDeliveredReply = true;

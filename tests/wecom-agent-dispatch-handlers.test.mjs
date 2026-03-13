@@ -11,6 +11,7 @@ function createBaseDeps(overrides = {}) {
   const state = {
     hasDeliveredReply: false,
     hasDeliveredPartialReply: false,
+    hasDeliveredFinalText: false,
     hasSentProgressNotice: false,
     blockTextFallback: "",
     streamChunkBuffer: "",
@@ -85,6 +86,7 @@ test("createWecomAgentDispatchHandlers sends formatted final text with workspace
   await handlers.deliver({ text: "hello final" }, { kind: "final" });
 
   assert.equal(state.hasDeliveredReply, true);
+  assert.equal(state.hasDeliveredFinalText, true);
   assert.equal(sentTexts.length, 1);
   assert.equal(sentTexts[0], "hello final\n\nsent:1\n\nfailed:1");
 });
@@ -104,4 +106,62 @@ test("createWecomAgentDispatchHandlers handles final failure and onError", async
   await handlers.onError(new Error("boom"), { kind: "final" });
   assert.equal(state.hasDeliveredReply, true);
   assert.deepEqual(sentTexts, ["fallback"]);
+});
+
+test("createWecomAgentDispatchHandlers delivers tail when final arrives after partial finalization", async () => {
+  const sentTexts = [];
+  const state = {
+    hasDeliveredReply: true,
+    hasDeliveredPartialReply: true,
+    hasDeliveredFinalText: false,
+    hasSentProgressNotice: false,
+    blockTextFallback: "Hello, here is",
+    streamChunkBuffer: "",
+    streamChunkLastSentAt: 0,
+    streamChunkSentCount: 2,
+    streamChunkSendChain: Promise.resolve(),
+    suppressLateDispatcherDeliveries: false,
+  };
+  const { deps } = createBaseDeps({
+    state,
+    streamingEnabled: true,
+    sendTextToUser: async (text) => sentTexts.push(String(text)),
+    markdownToWecomText: (text) => String(text),
+    computeStreamingTailText: ({ finalText, streamedText }) => {
+      if (finalText.startsWith(streamedText)) return finalText.slice(streamedText.length).trim();
+      return "";
+    },
+  });
+  const handlers = createWecomAgentDispatchHandlers(deps);
+
+  await handlers.deliver({ text: "Hello, here is the full answer." }, { kind: "final" });
+
+  assert.deepEqual(sentTexts, ["the full answer."]);
+  assert.equal(state.hasDeliveredFinalText, true);
+});
+
+test("createWecomAgentDispatchHandlers ignores late final when hasDeliveredFinalText is already true", async () => {
+  const sentTexts = [];
+  const state = {
+    hasDeliveredReply: true,
+    hasDeliveredPartialReply: true,
+    hasDeliveredFinalText: true,
+    hasSentProgressNotice: false,
+    blockTextFallback: "Hello, here is the full answer.",
+    streamChunkBuffer: "",
+    streamChunkLastSentAt: 0,
+    streamChunkSentCount: 3,
+    streamChunkSendChain: Promise.resolve(),
+    suppressLateDispatcherDeliveries: false,
+  };
+  const { deps } = createBaseDeps({
+    state,
+    streamingEnabled: true,
+    sendTextToUser: async (text) => sentTexts.push(String(text)),
+  });
+  const handlers = createWecomAgentDispatchHandlers(deps);
+
+  await handlers.deliver({ text: "Hello, here is the full answer." }, { kind: "final" });
+
+  assert.deepEqual(sentTexts, []);
 });

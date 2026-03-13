@@ -16,7 +16,8 @@ export function createWecomAgentTextSender({
   assertFunction("sendWecomText", sendWecomText);
 
   return async function sendText(text) {
-    return sendWecomText({
+    logger?.info?.(`wecom: sending text to user=${toUser}, bytes=${Buffer.byteLength(String(text ?? ""), "utf8")}`);
+    const result = await sendWecomText({
       corpId,
       corpSecret,
       agentId,
@@ -25,5 +26,7 @@ export function createWecomAgentTextSender({
       logger,
       proxyUrl,
     });
+    logger?.info?.(`wecom: text sent successfully to user=${toUser}, msgid=${result?.msgid || "n/a"}`);
+    return result;
   };
 }

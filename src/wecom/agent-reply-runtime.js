@@ -8,6 +8,7 @@ export function createWecomAgentDispatchState() {
   return {
     hasDeliveredReply: false,
     hasDeliveredPartialReply: false,
+    hasDeliveredFinalText: false,
     hasSentProgressNotice: false,
     blockTextFallback: "",
     streamChunkBuffer: "",

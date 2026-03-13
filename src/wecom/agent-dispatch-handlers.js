@@ -37,6 +37,7 @@ export function createWecomAgentDispatchHandlers({
   }
   if (!("hasDeliveredReply" in state)) state.hasDeliveredReply = false;
   if (!("hasDeliveredPartialReply" in state)) state.hasDeliveredPartialReply = false;
+  if (!("hasDeliveredFinalText" in state)) state.hasDeliveredFinalText = false;
   if (!("blockTextFallback" in state)) state.blockTextFallback = "";
   if (!("streamChunkBuffer" in state)) state.streamChunkBuffer = "";
   if (!("streamChunkSentCount" in state)) state.streamChunkSentCount = 0;
@@ -62,7 +63,35 @@ export function createWecomAgentDispatchHandlers({
         return;
       }
       if (state.hasDeliveredReply) {
-        logger?.info?.("wecom: ignoring late reply because a reply was already delivered");
+        // If a final text payload arrives after partial streaming was finalized, deliver the tail.
+        // This handles the race where finalizeWecomAgentVisiblePartialReply ran before deliver(final).
+        if (
+          info.kind === "final" &&
+          !state.hasDeliveredFinalText &&
+          streamingEnabled &&
+          state.streamChunkSentCount > 0 &&
+          payload.text &&
+          !isAgentFailureText(payload.text)
+        ) {
+          const finalText = markdownToWecomText(payload.text).trim();
+          const streamedText = markdownToWecomText(state.blockTextFallback).trim();
+          const tailText = computeStreamingTailText({ finalText, streamedText });
+          if (tailText) {
+            await sendTextToUser(tailText);
+            logger?.info?.(
+              `wecom: delivered tail of late final reply for ${fromUser}, tail_bytes=${tailText.length}`,
+            );
+          } else {
+            logger?.info?.(
+              `wecom: late final arrived but no tail to send (finalText=${finalText.length}b, streamedText=${streamedText.length}b)`,
+            );
+          }
+          state.hasDeliveredFinalText = true;
+        } else {
+          logger?.info?.(
+            `wecom: ignoring late reply kind=${info.kind} hasDeliveredFinalText=${state.hasDeliveredFinalText} streamingEnabled=${streamingEnabled} streamChunkSentCount=${state.streamChunkSentCount}`,
+          );
+        }
         return;
       }
       if (info.kind === "block") {
@@ -97,6 +126,7 @@ export function createWecomAgentDispatchHandlers({
               await sendTextToUser(tailText);
             }
             state.hasDeliveredReply = true;
+            state.hasDeliveredFinalText = true;
             deliveredFinalText = true;
             logger?.info?.(
               `wecom: streaming reply completed for ${fromUser}, chunks=${state.streamChunkSentCount}${tailText ? " +tail" : ""}`,
@@ -120,6 +150,7 @@ export function createWecomAgentDispatchHandlers({
           const finalReplyText = [formattedReply, ...workspaceHints].filter(Boolean).join("\n\n");
           await sendTextToUser(finalReplyText);
           state.hasDeliveredReply = true;
+          state.hasDeliveredFinalText = true;
           deliveredFinalText = true;
           logger?.info?.(`wecom: sent AI reply to ${fromUser}: ${finalReplyText.slice(0, 50)}...`);
         }
