@@ -87,6 +87,15 @@ export function createWecomAgentDispatchHandlers({
             );
           }
           state.hasDeliveredFinalText = true;
+        } else if (info.kind === "final" && state.hasDeliveredFinalText && payload.text && !isAgentFailureText(payload.text)) {
+          // Multiple finals arrived - this can happen when agent sends intermediate status then real final.
+          // Deliver the new final as an additional message.
+          logger?.warn?.(
+            `wecom: received additional final after hasDeliveredFinalText=true, delivering as new message (length=${payload.text.length})`,
+          );
+          const formattedReply = markdownToWecomText(payload.text);
+          await sendTextToUser(formattedReply);
+          logger?.info?.(`wecom: sent additional final reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
         } else {
           logger?.info?.(
             `wecom: ignoring late reply kind=${info.kind} hasDeliveredFinalText=${state.hasDeliveredFinalText} streamingEnabled=${streamingEnabled} streamChunkSentCount=${state.streamChunkSentCount}`,
@@ -105,6 +114,10 @@ export function createWecomAgentDispatchHandlers({
         return;
       }
       if (info.kind !== "final") return;
+
+      logger?.info?.(
+        `wecom: received final delivery hasDeliveredReply=${state.hasDeliveredReply} hasDeliveredFinalText=${state.hasDeliveredFinalText} text_length=${payload.text?.length || 0}`,
+      );
 
       let deliveredFinalText = false;
       if (payload.text) {

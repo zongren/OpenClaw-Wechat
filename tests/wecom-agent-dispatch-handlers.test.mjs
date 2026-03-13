@@ -140,7 +140,7 @@ test("createWecomAgentDispatchHandlers delivers tail when final arrives after pa
   assert.equal(state.hasDeliveredFinalText, true);
 });
 
-test("createWecomAgentDispatchHandlers ignores late final when hasDeliveredFinalText is already true", async () => {
+test("createWecomAgentDispatchHandlers delivers additional final when hasDeliveredFinalText is already true", async () => {
   const sentTexts = [];
   const state = {
     hasDeliveredReply: true,
@@ -156,12 +156,12 @@ test("createWecomAgentDispatchHandlers ignores late final when hasDeliveredFinal
   };
   const { deps } = createBaseDeps({
     state,
-    streamingEnabled: true,
+    streamingEnabled: false,
     sendTextToUser: async (text) => sentTexts.push(String(text)),
   });
   const handlers = createWecomAgentDispatchHandlers(deps);
 
-  await handlers.deliver({ text: "Hello, here is the full answer." }, { kind: "final" });
+  await handlers.deliver({ text: "Here are the actual final results." }, { kind: "final" });
 
-  assert.deepEqual(sentTexts, []);
+  assert.deepEqual(sentTexts, ["Here are the actual final results."]);
 });
