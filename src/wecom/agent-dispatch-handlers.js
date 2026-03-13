@@ -87,15 +87,16 @@ export function createWecomAgentDispatchHandlers({
             );
           }
           state.hasDeliveredFinalText = true;
-        } else if (info.kind === "final" && state.hasDeliveredFinalText && payload.text && !isAgentFailureText(payload.text)) {
+        } else if (info.kind === "final" && payload.text && !isAgentFailureText(payload.text)) {
           // Multiple finals arrived - this can happen when agent sends intermediate status then real final.
-          // Deliver the new final as an additional message.
+          // Deliver every subsequent final as an additional message (don't gate on hasDeliveredFinalText).
           logger?.warn?.(
-            `wecom: received additional final after hasDeliveredFinalText=true, delivering as new message (length=${payload.text.length})`,
+            `wecom: received additional final after hasDeliveredReply=true, delivering as new message (length=${payload.text.length})`,
           );
           const formattedReply = markdownToWecomText(payload.text);
           await sendTextToUser(formattedReply);
           logger?.info?.(`wecom: sent additional final reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
+          // Don't set hasDeliveredFinalText here - allow unlimited subsequent finals
         } else {
           logger?.info?.(
             `wecom: ignoring late reply kind=${info.kind} hasDeliveredFinalText=${state.hasDeliveredFinalText} streamingEnabled=${streamingEnabled} streamChunkSentCount=${state.streamChunkSentCount}`,
