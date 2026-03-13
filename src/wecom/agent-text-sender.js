@@ -12,6 +12,7 @@ export function createWecomAgentTextSender({
   toUser,
   logger,
   proxyUrl,
+  apiProxy,
 } = {}) {
   assertFunction("sendWecomText", sendWecomText);
 
@@ -25,6 +26,7 @@ export function createWecomAgentTextSender({
       text,
       logger,
       proxyUrl,
+      apiProxy,
     });
     logger?.info?.(`wecom: text sent successfully to user=${toUser}, msgid=${result?.msgid || "n/a"}`);
     return result;
