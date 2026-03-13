@@ -386,7 +386,7 @@ export function createWecomBotLongConnectionManager({
       try {
         if (client.missedHeartbeatAcks >= 2) {
           api?.logger?.warn?.(
-            `wecom(bot-longconn): heartbeat missed twice, force reconnect account=${client.accountId}`,
+            `wechat_work(bot-longconn): heartbeat missed twice, force reconnect account=${client.accountId}`,
           );
           safeTerminateSocket(client.ws);
           return;
@@ -399,7 +399,7 @@ export function createWecomBotLongConnectionManager({
           }) || client.lastPingReqId;
       } catch (err) {
         api?.logger?.warn?.(
-          `wecom(bot-longconn): ping failed account=${client.accountId}: ${String(err?.message || err)}`,
+          `wechat_work(bot-longconn): ping failed account=${client.accountId}: ${String(err?.message || err)}`,
         );
       }
     }, intervalMs);
@@ -419,7 +419,7 @@ export function createWecomBotLongConnectionManager({
     }, delayMs);
     client.reconnectTimer?.unref?.();
     api?.logger?.warn?.(
-      `wecom(bot-longconn): reconnect scheduled account=${client.accountId} in ${delayMs}ms`,
+      `wechat_work(bot-longconn): reconnect scheduled account=${client.accountId} in ${delayMs}ms`,
     );
   }
 
@@ -476,7 +476,7 @@ export function createWecomBotLongConnectionManager({
       )
       .catch((err) => {
         api?.logger?.error?.(
-          `wecom(bot-longconn): async message processing failed: ${String(err?.message || err)}`,
+          `wechat_work(bot-longconn): async message processing failed: ${String(err?.message || err)}`,
         );
         recordRuntimeErrorMetric({
           scope: "bot-longconn-dispatch",
@@ -493,7 +493,7 @@ export function createWecomBotLongConnectionManager({
           reason: "bot-longconn-processing-error",
         }).catch((deliveryErr) => {
           api?.logger?.warn?.(
-            `wecom(bot-longconn): failed to deliver async error reply: ${String(deliveryErr?.message || deliveryErr)}`,
+            `wechat_work(bot-longconn): failed to deliver async error reply: ${String(deliveryErr?.message || deliveryErr)}`,
           );
         });
       });
@@ -556,7 +556,7 @@ export function createWecomBotLongConnectionManager({
       timestamp: Date.now(),
     });
     api?.logger?.info?.(
-      `wecom(bot-longconn): inbound ${describeWecomBotParsedMessage(parsed)} account=${client.accountId}`,
+      `wechat_work(bot-longconn): inbound ${describeWecomBotParsedMessage(parsed)} account=${client.accountId}`,
     );
 
     if (parsed.kind === "event" || parsed.kind === "unsupported" || parsed.kind === "invalid") {
@@ -610,7 +610,7 @@ export function createWecomBotLongConnectionManager({
       finish: false,
     }).catch((err) => {
       api?.logger?.warn?.(
-        `wecom(bot-longconn): placeholder push failed account=${client.accountId}: ${String(err?.message || err)}`,
+        `wechat_work(bot-longconn): placeholder push failed account=${client.accountId}: ${String(err?.message || err)}`,
       );
     });
     await scheduleInboundTask({
@@ -667,10 +667,10 @@ export function createWecomBotLongConnectionManager({
             transport: "bot.longConnection",
           });
           startPingLoop(client, api);
-          api?.logger?.info?.(`wecom(bot-longconn): subscribed account=${client.accountId}`);
+          api?.logger?.info?.(`wechat_work(bot-longconn): subscribed account=${client.accountId}`);
         } else {
           api?.logger?.warn?.(
-            `wecom(bot-longconn): subscribe failed account=${client.accountId} errcode=${errcode} errmsg=${errmsg}`,
+            `wechat_work(bot-longconn): subscribe failed account=${client.accountId} errcode=${errcode} errmsg=${errmsg}`,
           );
           safeCloseSocket(client.ws, 4001, `subscribe failed: ${errmsg}`);
         }
@@ -679,7 +679,7 @@ export function createWecomBotLongConnectionManager({
       if (reqId && (reqId === client.lastPingReqId || reqId.startsWith(`${CMD_PING}_`))) {
         if (errcode !== 0) {
           api?.logger?.warn?.(
-            `wecom(bot-longconn): ping rejected account=${client.accountId} errcode=${errcode} errmsg=${errmsg}`,
+            `wechat_work(bot-longconn): ping rejected account=${client.accountId} errcode=${errcode} errmsg=${errmsg}`,
           );
           return;
         }
@@ -688,7 +688,7 @@ export function createWecomBotLongConnectionManager({
       }
       if (errcode !== 0) {
         api?.logger?.warn?.(
-          `wecom(bot-longconn): command rejected account=${client.accountId} reqId=${reqId || "n/a"} errcode=${errcode} errmsg=${errmsg}`,
+          `wechat_work(bot-longconn): command rejected account=${client.accountId} reqId=${reqId || "n/a"} errcode=${errcode} errmsg=${errmsg}`,
         );
       }
       return;
@@ -696,7 +696,7 @@ export function createWecomBotLongConnectionManager({
 
     if (command && command !== CMD_PING) {
       api?.logger?.debug?.(
-        `wecom(bot-longconn): ignore message cmd=${command} account=${client.accountId}`,
+        `wechat_work(bot-longconn): ignore message cmd=${command} account=${client.accountId}`,
       );
     }
   }
@@ -708,7 +708,7 @@ export function createWecomBotLongConnectionManager({
       await handleSocketFrame(client, api, payload);
     } catch (err) {
       api?.logger?.warn?.(
-        `wecom(bot-longconn): failed to handle socket message account=${client.accountId}: ${String(err?.message || err)}`,
+        `wechat_work(bot-longconn): failed to handle socket message account=${client.accountId}: ${String(err?.message || err)}`,
       );
       recordRuntimeErrorMetric({
         scope: "bot-longconn-message",
@@ -731,11 +731,11 @@ export function createWecomBotLongConnectionManager({
     const proxyUrl = String(client?.proxyUrl ?? "").trim();
     attachWecomProxyDispatcher(wsUrl, { forceProxy: true }, { proxyUrl, logger: api?.logger });
     api?.logger?.info?.(
-      `wecom(bot-longconn): connect attempt account=${client.accountId} marker=${LONG_CONNECTION_RUNTIME_MARKER} url=${wsUrl} proxy=${proxyUrl || "direct"} wsCtor=${String(webSocketCtor?.name || "unknown")}`,
+      `wechat_work(bot-longconn): connect attempt account=${client.accountId} marker=${LONG_CONNECTION_RUNTIME_MARKER} url=${wsUrl} proxy=${proxyUrl || "direct"} wsCtor=${String(webSocketCtor?.name || "unknown")}`,
     );
     if (proxyUrl) {
       api?.logger?.debug?.(
-        `wecom(bot-longconn): outboundProxy configured for account=${client.accountId}; current ws runtime uses direct WebSocket dialing`,
+        `wechat_work(bot-longconn): outboundProxy configured for account=${client.accountId}; current ws runtime uses direct WebSocket dialing`,
       );
     }
     client.ws = new webSocketCtor(wsUrl);
@@ -758,7 +758,7 @@ export function createWecomBotLongConnectionManager({
             secret: client.config.longConnection.secret,
           },
         }) || "";
-      api?.logger?.info?.(`wecom(bot-longconn): socket opened account=${client.accountId} url=${wsUrl}`);
+      api?.logger?.info?.(`wechat_work(bot-longconn): socket opened account=${client.accountId} url=${wsUrl}`);
     });
     bindSocketListener(client.ws, "message", (event) => {
       void handleSocketMessage(client, api, event);
@@ -766,7 +766,7 @@ export function createWecomBotLongConnectionManager({
     bindSocketListener(client.ws, "error", (event) => {
       const err = event?.error ?? event;
       api?.logger?.warn?.(
-        `wecom(bot-longconn): socket error account=${client.accountId}: ${String(err?.stack || err?.message || err || "unknown error")}`,
+        `wechat_work(bot-longconn): socket error account=${client.accountId}: ${String(err?.stack || err?.message || err || "unknown error")}`,
       );
     });
     bindSocketListener(client.ws, "close", (eventOrCode, maybeReason) => {
@@ -788,7 +788,7 @@ export function createWecomBotLongConnectionManager({
       });
       client.ws = null;
       api?.logger?.warn?.(
-        `wecom(bot-longconn): closed account=${client.accountId} code=${Number(event?.code ?? 0)} reason=${normalizeCloseReason(event?.reason)}`,
+        `wechat_work(bot-longconn): closed account=${client.accountId} code=${Number(event?.code ?? 0)} reason=${normalizeCloseReason(event?.reason)}`,
       );
       scheduleReconnect(client, api);
     });
@@ -836,7 +836,7 @@ export function createWecomBotLongConnectionManager({
         const secret = String(item?.longConnection?.secret ?? "").trim();
         if (botId && secret) return true;
         api?.logger?.warn?.(
-          `wecom(bot-longconn): skipped account=${normalizeAccountId(item?.accountId)} (missing botId/secret)`,
+          `wechat_work(bot-longconn): skipped account=${normalizeAccountId(item?.accountId)} (missing botId/secret)`,
         );
         return false;
       });
@@ -846,7 +846,7 @@ export function createWecomBotLongConnectionManager({
       if (wantedAccountIds.has(accountId)) continue;
       stopClient(client);
       clients.delete(accountId);
-      api?.logger?.info?.(`wecom(bot-longconn): stopped account=${accountId}`);
+      api?.logger?.info?.(`wechat_work(bot-longconn): stopped account=${accountId}`);
     }
 
     let started = 0;

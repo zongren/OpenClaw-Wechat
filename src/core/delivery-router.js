@@ -133,7 +133,7 @@ export function createWecomDeliveryRouter({
           if (observabilityEnabled) {
             const metaLine = logPayloadMeta ? summarizeMeta({ ...meta, ...success.meta }) : "";
             logger?.info?.(
-              `wecom(delivery): trace=${traceId || "n/a"} layer=${layer} status=ok${metaLine ? ` ${metaLine}` : ""}`,
+              `wechat_work(delivery): trace=${traceId || "n/a"} layer=${layer} status=ok${metaLine ? ` ${metaLine}` : ""}`,
             );
           }
           return {
@@ -158,7 +158,7 @@ export function createWecomDeliveryRouter({
         attempts.push(failed);
         if (observabilityEnabled) {
           logger?.warn?.(
-            `wecom(delivery): trace=${traceId || "n/a"} layer=${layer} status=miss reason=${failed.reason}`,
+            `wechat_work(delivery): trace=${traceId || "n/a"} layer=${layer} status=miss reason=${failed.reason}`,
           );
         }
       } catch (err) {
@@ -175,7 +175,7 @@ export function createWecomDeliveryRouter({
         attempts.push(failure);
         if (observabilityEnabled) {
           logger?.warn?.(
-            `wecom(delivery): trace=${traceId || "n/a"} layer=${layer} status=error reason=${failure.reason}`,
+            `wechat_work(delivery): trace=${traceId || "n/a"} layer=${layer} status=error reason=${failure.reason}`,
           );
         }
       }
@@ -183,7 +183,7 @@ export function createWecomDeliveryRouter({
 
     if (observabilityEnabled) {
       logger?.error?.(
-        `wecom(delivery): trace=${traceId || "n/a"} all layers exhausted order=${activeOrder.join(">")}`,
+        `wechat_work(delivery): trace=${traceId || "n/a"} all layers exhausted order=${activeOrder.join(">")}`,
       );
     }
     return {

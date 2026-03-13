@@ -92,7 +92,7 @@ export function createWecomBotLateReplyRuntime({
     if (dispatchState.streamFinished && fallback.transcriptMessageId) {
       markTranscriptReplyDelivered(sessionId, fallback.transcriptMessageId);
       logger?.info?.(
-        `wecom(bot): filled reply from transcript session=${sessionId} messageId=${fallback.transcriptMessageId}`,
+        `wechat_work(bot): filled reply from transcript session=${sessionId} messageId=${fallback.transcriptMessageId}`,
       );
     }
     return dispatchState.streamFinished;

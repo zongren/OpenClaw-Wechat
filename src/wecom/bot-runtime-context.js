@@ -50,7 +50,7 @@ export async function prepareWecomBotRuntimeContext({
   const routedAgentId = String(route?.agentId ?? "").trim();
   const sessionId = String(route?.sessionKey ?? "").trim() || baseSessionId;
   api?.logger?.info?.(
-    `wecom(bot): routed agent=${route.agentId} session=${sessionId} matchedBy=${route.dynamicMatchedBy || route.matchedBy || "default"}`,
+    `wechat_work(bot): routed agent=${route.agentId} session=${sessionId} matchedBy=${route.dynamicMatchedBy || route.matchedBy || "default"}`,
   );
   try {
     await seedDynamicAgentWorkspace({
@@ -59,7 +59,7 @@ export async function prepareWecomBotRuntimeContext({
       workspaceTemplate: dynamicAgentPolicy.workspaceTemplate,
     });
   } catch (seedErr) {
-    api?.logger?.warn?.(`wecom(bot): workspace seed failed: ${String(seedErr?.message || seedErr)}`);
+    api?.logger?.warn?.(`wechat_work(bot): workspace seed failed: ${String(seedErr?.message || seedErr)}`);
   }
 
   const storePath = runtime.channel.session.resolveStorePath(cfg.session?.store, {
@@ -108,7 +108,7 @@ export async function prepareWecomBotRuntimeContext({
       accountId,
     },
     onRecordError: (err) => {
-      api?.logger?.warn?.(`wecom(bot): failed to record session: ${err}`);
+      api?.logger?.warn?.(`wechat_work(bot): failed to record session: ${err}`);
     },
   });
 

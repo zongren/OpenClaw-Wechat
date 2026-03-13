@@ -93,7 +93,7 @@ export function createWecomWebhookBotMediaSender({
       } catch (err) {
         failedUrls.push(mediaUrl);
         logger?.warn?.(
-          `wecom(bot): webhook media send failed target=${mediaUrl} type=${target.type} reason=${String(err?.message || err)}`,
+          `wechat_work(bot): webhook media send failed target=${mediaUrl} type=${target.type} reason=${String(err?.message || err)}`,
         );
       }
     }

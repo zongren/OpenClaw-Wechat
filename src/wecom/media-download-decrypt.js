@@ -56,7 +56,7 @@ export function smartDecryptWecomFileBuffer({
     return { buffer, decrypted: false, reason: "decrypt-not-recognized" };
   } catch (err) {
     logger?.warn?.(
-      `wecom(bot): smart decrypt failed url=${String(sourceUrl ?? "").slice(0, 120)} reason=${String(err?.message || err)}`,
+      `wechat_work(bot): smart decrypt failed url=${String(sourceUrl ?? "").slice(0, 120)} reason=${String(err?.message || err)}`,
     );
     return { buffer, decrypted: false, reason: "decrypt-failed" };
   }

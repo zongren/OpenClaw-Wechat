@@ -83,7 +83,7 @@ export function createWecomRegisterRuntime({
         new Set(enabledBotConfigs.map((item) => String(item?.webhookPath || "/wecom/bot/callback"))),
       ).join(", ");
       api.logger.info?.(
-        `wecom(bot): config loaded (accounts=${enabledBotConfigs.length}, webhook=${webhookSummary}, streamExpireMs=${botModeConfig.streamExpireMs})`,
+        `wechat_work(bot): config loaded (accounts=${enabledBotConfigs.length}, webhook=${webhookSummary}, streamExpireMs=${botModeConfig.streamExpireMs})`,
       );
     } else {
       api.logger.warn?.("wechat_work: no configuration found (check channels.wechat_work in openclaw.json)");
@@ -104,7 +104,7 @@ export function createWecomRegisterRuntime({
       const longConnectionResult = syncWecomBotLongConnections(api);
       longConnectionStarted = Number(longConnectionResult?.started) || 0;
       if (longConnectionStarted > 0) {
-        api.logger.info?.(`wecom(bot-longconn): enabled accounts=${longConnectionStarted}`);
+        api.logger.info?.(`wechat_work(bot-longconn): enabled accounts=${longConnectionStarted}`);
       }
     }
     if (observabilityPolicy.enabled) {

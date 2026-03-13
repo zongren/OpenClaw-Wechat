@@ -72,7 +72,7 @@ export function createWecomRouteRegistrar({
     if (signedBotConfigs.length === 0) {
       const longConnectionOnly = enabledBotConfigs.some((item) => item?.longConnection?.enabled === true);
       if (!longConnectionOnly) {
-        api.logger.warn?.("wecom(bot): enabled but missing token/encodingAesKey; route not registered");
+        api.logger.warn?.("wechat_work(bot): enabled but missing token/encodingAesKey; route not registered");
       }
       return false;
     }
@@ -107,12 +107,12 @@ export function createWecomRouteRegistrar({
         if (legacyAliasPath !== normalizedPath) {
           if (agentPathSet.has(legacyAliasPath)) {
             api.logger.warn?.(
-              `wecom(bot): skip legacy alias ${legacyAliasPath} for account=${normalizedAccountId} (conflicts with agent webhook path)`,
+              `wechat_work(bot): skip legacy alias ${legacyAliasPath} for account=${normalizedAccountId} (conflicts with agent webhook path)`,
             );
           } else {
             registerGroupedPath(legacyAliasPath);
             api.logger.info?.(
-              `wecom(bot): registered legacy alias ${legacyAliasPath} for account=${normalizedAccountId}`,
+              `wechat_work(bot): registered legacy alias ${legacyAliasPath} for account=${normalizedAccountId}`,
             );
           }
         }
@@ -161,7 +161,7 @@ export function createWecomRouteRegistrar({
       });
 
       const accountIds = pathConfigs.map((item) => String(item?.accountId ?? "default")).join(", ");
-      api.logger.info?.(`wecom(bot): registered webhook at ${normalizedPath} (accounts=${accountIds})`);
+      api.logger.info?.(`wechat_work(bot): registered webhook at ${normalizedPath} (accounts=${accountIds})`);
       registeredCount += 1;
     }
     return registeredCount > 0;

@@ -105,7 +105,7 @@ export function createWecomBotWebhookHandler({
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.end(plainEchostr);
         api.logger.info?.(
-          `wecom(bot): verified callback URL at ${normalizedPath} (account=${matchedBotConfig.accountId || "default"})`,
+          `wechat_work(bot): verified callback URL at ${normalizedPath} (account=${matchedBotConfig.accountId || "default"})`,
         );
         return;
       }
@@ -126,7 +126,7 @@ export function createWecomBotWebhookHandler({
         res.statusCode = 400;
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.end("Invalid request body");
-        api.logger.warn?.(`wecom(bot): failed to parse callback body: ${String(err?.message || err)}`);
+        api.logger.warn?.(`wechat_work(bot): failed to parse callback body: ${String(err?.message || err)}`);
         return;
       }
 
@@ -161,7 +161,7 @@ export function createWecomBotWebhookHandler({
         res.statusCode = 400;
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.end("Decrypt failed");
-        api.logger.warn?.(`wecom(bot): failed to decrypt payload: ${String(err?.message || err)}`);
+        api.logger.warn?.(`wechat_work(bot): failed to decrypt payload: ${String(err?.message || err)}`);
         return;
       }
 
@@ -174,7 +174,7 @@ export function createWecomBotWebhookHandler({
         });
       }
       api.logger.info?.(
-        `wecom(bot): inbound ${describeWecomBotParsedMessage(parsed)} account=${matchedBotConfig.accountId || "default"}`,
+        `wechat_work(bot): inbound ${describeWecomBotParsedMessage(parsed)} account=${matchedBotConfig.accountId || "default"}`,
       );
       const handled = await dispatchParsed({
         parsed,
@@ -191,7 +191,7 @@ export function createWecomBotWebhookHandler({
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
       res.end("success");
     } catch (err) {
-      api.logger.error?.(`wecom(bot): webhook handler failed: ${String(err?.message || err)}`);
+      api.logger.error?.(`wechat_work(bot): webhook handler failed: ${String(err?.message || err)}`);
       recordRuntimeErrorMetric({
         scope: "bot-webhook",
         reason: String(err?.message || err),

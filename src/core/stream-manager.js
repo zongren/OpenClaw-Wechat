@@ -202,11 +202,11 @@ export class WecomStreamManager {
     this.cleanupTimer = setInterval(() => {
       const removed = this.cleanup();
       if (removed > 0) {
-        logger?.debug?.(`wecom(stream): cleaned ${removed} expired streams`);
+        logger?.debug?.(`wechat_work(stream): cleaned ${removed} expired streams`);
       }
     }, interval);
     this.cleanupTimer.unref?.();
-    logger?.info?.(`wecom(stream): cleanup timer started (expireMs=${this.expireMs})`);
+    logger?.info?.(`wechat_work(stream): cleanup timer started (expireMs=${this.expireMs})`);
   }
 
   stopCleanup() {

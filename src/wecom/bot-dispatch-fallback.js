@@ -57,7 +57,7 @@ export async function handleWecomBotPostDispatchFallback({
   if (watcherStarted) return true;
 
   api?.logger?.warn?.(
-    `wecom(bot): dispatch finished without deliverable content; late watcher unavailable, fallback to timeout text session=${sessionId}`,
+    `wechat_work(bot): dispatch finished without deliverable content; late watcher unavailable, fallback to timeout text session=${sessionId}`,
   );
   await safeDeliverReply("抱歉，当前模型请求超时或网络不稳定，请稍后重试。", "timeout-fallback");
   return false;
@@ -90,7 +90,7 @@ export async function handleWecomBotDispatchError({
   assertFunction("markTranscriptReplyDelivered", markTranscriptReplyDelivered);
   assertFunction("markdownToWecomText", markdownToWecomText);
 
-  api?.logger?.warn?.(`wecom(bot): processing failed: ${String(err?.message || err)}`);
+  api?.logger?.warn?.(`wechat_work(bot): processing failed: ${String(err?.message || err)}`);
   if (dispatchState && typeof dispatchState === "object" && dispatchState.streamFinished !== true) {
     const partialPayload = buildWecomBotVisibleFallbackPayload(dispatchState.blockText, markdownToWecomText);
     if (partialPayload.text || partialPayload.thinkingContent) {

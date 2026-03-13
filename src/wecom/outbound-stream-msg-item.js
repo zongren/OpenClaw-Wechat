@@ -58,7 +58,7 @@ export async function buildActiveStreamMsgItems({
         },
       });
     } catch (err) {
-      logger?.warn?.(`wecom(bot): active_stream msg_item image fallback ${mediaUrl}: ${String(err?.message || err)}`);
+      logger?.warn?.(`wechat_work(bot): active_stream msg_item image fallback ${mediaUrl}: ${String(err?.message || err)}`);
       fallbackUrls.push(mediaUrl);
     }
   }

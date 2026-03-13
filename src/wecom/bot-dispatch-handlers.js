@@ -68,7 +68,7 @@ export function createWecomBotDispatchHandlers({
             queueBotStreamMedia(streamId, mediaUrl, { mediaType: blockMediaType });
           }
           logger?.debug?.(
-            `wecom(bot): queued block media stream=${streamId} count=${blockMediaUrls.length} type=${blockMediaType || "unknown"}`,
+            `wechat_work(bot): queued block media stream=${streamId} count=${blockMediaUrls.length} type=${blockMediaType || "unknown"}`,
           );
         }
         if (!payload?.text) return;
@@ -91,7 +91,7 @@ export function createWecomBotDispatchHandlers({
             });
           } catch (err) {
             logger?.warn?.(
-              `wecom(bot-longconn): failed to push block stream update: ${String(err?.message || err)}`,
+              `wechat_work(bot-longconn): failed to push block stream update: ${String(err?.message || err)}`,
             );
           }
         }
@@ -127,7 +127,7 @@ export function createWecomBotDispatchHandlers({
       }
     },
     onError: async (err, info) => {
-      logger?.error?.(`wecom(bot): ${info.kind} reply failed: ${String(err)}`);
+      logger?.error?.(`wechat_work(bot): ${info.kind} reply failed: ${String(err)}`);
       state.streamFinished = await safeDeliverReply(
         `抱歉，当前模型请求失败，请稍后重试。\n故障信息: ${String(err?.message || err).slice(0, 160)}`,
         `dispatch-${info.kind}-error`,

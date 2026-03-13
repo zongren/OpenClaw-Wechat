@@ -84,12 +84,12 @@ export function createWecomBotInboundContentBuilder({
                 effectiveBuffer = decryptedBuffer;
                 effectiveImageType = decryptedImageType;
                 api?.logger?.info?.(
-                  `wecom(bot): decrypted media buffer from content-type=${normalizedType || "unknown"} to ${decryptedImageType}`,
+                  `wechat_work(bot): decrypted media buffer from content-type=${normalizedType || "unknown"} to ${decryptedImageType}`,
                 );
               }
             } catch (decryptErr) {
               api?.logger?.warn?.(
-                `wecom(bot): media decrypt attempt failed: ${String(decryptErr?.message || decryptErr)}`,
+                `wechat_work(bot): media decrypt attempt failed: ${String(decryptErr?.message || decryptErr)}`,
               );
             }
           }
@@ -103,10 +103,10 @@ export function createWecomBotInboundContentBuilder({
           fetchedImagePaths.push(imageTempPath);
           tempPathsToCleanup.push(imageTempPath);
           api?.logger?.info?.(
-            `wecom(bot): downloaded image from url, size=${effectiveBuffer.length} bytes, path=${imageTempPath}`,
+            `wechat_work(bot): downloaded image from url, size=${effectiveBuffer.length} bytes, path=${imageTempPath}`,
           );
         } catch (imageErr) {
-          api?.logger?.warn?.(`wecom(bot): failed to fetch image url: ${String(imageErr?.message || imageErr)}`);
+          api?.logger?.warn?.(`wechat_work(bot): failed to fetch image url: ${String(imageErr?.message || imageErr)}`);
         }
       }
 
@@ -180,11 +180,11 @@ export function createWecomBotInboundContentBuilder({
             messageText = fileInstruction;
           }
           api?.logger?.info?.(
-            `wecom(bot): saved file to ${fileTempPath}, size=${decrypted.buffer.length} bytes` +
+            `wechat_work(bot): saved file to ${fileTempPath}, size=${decrypted.buffer.length} bytes` +
               `, decrypted=${decrypted.decrypted ? "yes" : "no"} source=${downloaded.source || "unknown"}`,
           );
         } catch (fileErr) {
-          api?.logger?.warn?.(`wecom(bot): failed to fetch file url: ${String(fileErr?.message || fileErr)}`);
+          api?.logger?.warn?.(`wechat_work(bot): failed to fetch file url: ${String(fileErr?.message || fileErr)}`);
           const failedFileHint = `[用户发送了一个文件: ${displayName}，但下载失败]\n\n请提示用户重新发送文件。`;
           if (msgType === "mixed" && messageText) {
             messageText = `${messageText}\n${failedFileHint}`.trim();
@@ -236,7 +236,7 @@ export function createWecomBotInboundContentBuilder({
               messageText = voiceText;
             }
           } catch (voiceErr) {
-            api?.logger?.warn?.(`wecom(bot): voice transcription failed: ${String(voiceErr?.message || voiceErr)}`);
+            api?.logger?.warn?.(`wechat_work(bot): voice transcription failed: ${String(voiceErr?.message || voiceErr)}`);
             return {
               aborted: true,
               abortText: "语音识别失败，请稍后重试。",

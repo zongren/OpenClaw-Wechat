@@ -52,7 +52,7 @@ export function createWecomBotTranscriptFallbackReader({
       };
     } catch (err) {
       if (logErrors) {
-        logger?.warn?.(`wecom(bot): transcript fallback failed: ${String(err?.message || err)}`);
+        logger?.warn?.(`wechat_work(bot): transcript fallback failed: ${String(err?.message || err)}`);
       }
       return { text: "", transcriptMessageId: "" };
     }

@@ -155,7 +155,7 @@ export function createWecomAgentWebhookHandler({
       const msgId = inbound.msgId;
 
       api.logger.info?.(
-        `wecom inbound: account=${matchedAccount.accountId} from=${fromUser} msgType=${msgType} chatId=${chatId || "N/A"} content=${(inbound?.content ?? "").slice?.(0, 80)}`,
+        `wechat_work inbound: account=${matchedAccount.accountId} from=${fromUser} msgType=${msgType} chatId=${chatId || "N/A"} content=${(inbound?.content ?? "").slice?.(0, 80)}`,
       );
       recordInboundMetric({
         mode: "agent",

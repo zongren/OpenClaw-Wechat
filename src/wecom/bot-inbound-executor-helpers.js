@@ -11,7 +11,7 @@ function warnUnsupportedBotGroupTriggerOnce(triggerMode, logger) {
   if (!mode || UNSUPPORTED_BOT_GROUP_TRIGGER_WARNED.has(mode)) return;
   UNSUPPORTED_BOT_GROUP_TRIGGER_WARNED.add(mode);
   logger?.warn?.(
-    `wecom(bot): groupChat.triggerMode=${mode} is not supported by WeCom Bot group callbacks; forcing mention mode (@).`,
+    `wechat_work(bot): groupChat.triggerMode=${mode} is not supported by WeCom Bot group callbacks; forcing mention mode (@).`,
   );
 }
 

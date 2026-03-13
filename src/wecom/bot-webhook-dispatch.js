@@ -153,7 +153,7 @@ export function createWecomBotParsedDispatcher({
         }),
       )
       .catch((err) => {
-        api.logger.error?.(`wecom(bot): async message processing failed: ${String(err?.message || err)}`);
+        api.logger.error?.(`wechat_work(bot): async message processing failed: ${String(err?.message || err)}`);
         recordRuntimeErrorMetric({
           scope: "bot-dispatch",
           reason: String(err?.message || err),
@@ -169,7 +169,7 @@ export function createWecomBotParsedDispatcher({
           text: `抱歉，当前模型请求失败，请稍后重试。\n故障信息: ${String(err?.message || err).slice(0, 160)}`,
           reason: "bot-async-processing-error",
         }).catch((deliveryErr) => {
-          api.logger.warn?.(`wecom(bot): failed to deliver async error reply: ${String(deliveryErr?.message || deliveryErr)}`);
+          api.logger.warn?.(`wechat_work(bot): failed to deliver async error reply: ${String(deliveryErr?.message || deliveryErr)}`);
           finishBotStream(
             streamId,
             `抱歉，当前模型请求失败，请稍后重试。\n故障信息: ${String(err?.message || err).slice(0, 160)}`,
