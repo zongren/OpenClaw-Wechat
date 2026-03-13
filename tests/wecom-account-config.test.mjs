@@ -27,7 +27,7 @@ test("account registry respects channels.wecom.defaultAccount", () => {
   const registry = createRegistry();
   const config = {
     channels: {
-      wecom: {
+      wechat_work: {
         defaultAccount: "sales",
         accounts: {
           sales: buildAccount(1001),
@@ -48,7 +48,7 @@ test("account registry discovers legacy inline account entries", () => {
   const registry = createRegistry();
   const config = {
     channels: {
-      wecom: {
+      wechat_work: {
         ...buildAccount(1001),
         legacy: buildAccount(1003, { webhookPath: "/wecom/legacy/callback" }),
       },

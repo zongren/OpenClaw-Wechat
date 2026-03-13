@@ -1145,7 +1145,7 @@ export function resolveWecomDynamicAgentConfig({
     dynamicConfig.deterministicPrefix,
     envVars?.WECOM_DYNAMIC_AGENT_PREFIX,
     processEnv?.WECOM_DYNAMIC_AGENT_PREFIX,
-    "wecom",
+    "wechat_work",
   );
   const autoProvision = parseBooleanLike(
     dynamicConfig.autoProvision,
@@ -1246,7 +1246,7 @@ export function resolveWecomDynamicAgentConfig({
     enabled,
     mode,
     idStrategy,
-    deterministicPrefix: deterministicPrefix || "wecom",
+    deterministicPrefix: deterministicPrefix || "wechat_work",
     autoProvision,
     allowUnknownAgentId,
     workspaceTemplate: workspaceTemplate || undefined,

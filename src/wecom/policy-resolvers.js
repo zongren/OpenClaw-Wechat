@@ -28,7 +28,7 @@ export function createWecomPolicyResolvers({
   function resolveWecomPolicyInputs(api) {
     const cfg = api?.config ?? getGatewayRuntime()?.config ?? {};
     return {
-      channelConfig: cfg?.channels?.wecom ?? {},
+      channelConfig: cfg?.channels?.wechat_work ?? {},
       envVars: cfg?.env?.vars ?? {},
       processEnv,
     };

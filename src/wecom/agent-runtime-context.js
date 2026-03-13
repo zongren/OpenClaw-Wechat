@@ -36,7 +36,7 @@ export async function prepareWecomAgentRuntimeContext({
   const route = resolveWecomAgentRoute({
     runtime,
     cfg,
-    channel: "wecom",
+    channel: "wechat_work",
     accountId: resolvedAccountId,
     sessionKey: baseSessionId,
     fromUser,
@@ -102,7 +102,7 @@ export async function prepareWecomAgentRuntimeContext({
     ctx: ctxPayload,
     updateLastRoute: {
       sessionKey: sessionId,
-      channel: "wecom",
+      channel: "wechat_work",
       to: fromUser,
       accountId: resolvedAccountId,
     },
@@ -113,7 +113,7 @@ export async function prepareWecomAgentRuntimeContext({
   api?.logger?.info?.(`wecom: session registered for ${sessionId}`);
 
   runtime.channel.activity.record({
-    channel: "wecom",
+    channel: "wechat_work",
     accountId: resolvedAccountId,
     direction: "inbound",
   });

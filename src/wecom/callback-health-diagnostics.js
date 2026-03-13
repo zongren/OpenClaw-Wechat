@@ -62,8 +62,8 @@ export function diagnoseWecomCallbackHealth({
     if (webhookPath) {
       const configPathHint =
         normalizedMode === "bot"
-          ? `请确认 channels.wecom.bot.webhookPath=${webhookPath} 与企业微信后台回调地址完全一致`
-          : `请确认 channels.wecom.webhookPath=${webhookPath} 与企业微信后台回调地址完全一致`;
+          ? `请确认 channels.wechat_work.bot.webhookPath=${webhookPath} 与企业微信后台回调地址完全一致`
+          : `请确认 channels.wechat_work.webhookPath=${webhookPath} 与企业微信后台回调地址完全一致`;
       hints.push(configPathHint);
     }
     hints.push("确认插件已加载：plugins.entries.openclaw-wechat.enabled=true 且 plugins.allow 包含 openclaw-wechat");

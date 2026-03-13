@@ -87,7 +87,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
   }) {
     const config = getWecomConfig(api, accountId);
     if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
-      api.logger.warn?.("wecom: not configured (check channels.wecom in openclaw.json)");
+      api.logger.warn?.("wecom: not configured (check channels.wechat_work in openclaw.json)");
       return;
     }
 

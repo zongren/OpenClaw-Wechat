@@ -40,7 +40,7 @@ export function createWecomVoiceTranscriber({
   function resolveWecomVoiceTranscriptionConfig(api) {
     const cfg = api?.config ?? {};
     return resolveVoiceTranscriptionConfig({
-      channelConfig: cfg?.channels?.wecom,
+      channelConfig: cfg?.channels?.wechat_work,
       envVars: cfg?.env?.vars ?? {},
       processEnv,
     });

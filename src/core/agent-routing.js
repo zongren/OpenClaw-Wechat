@@ -76,10 +76,10 @@ export function buildDeterministicWecomAgentId({
   fromUser = "",
   chatId = "",
   isGroupChat = false,
-  prefix = "wecom",
+  prefix = "wechat_work",
   idStrategy = "readable-hash",
 } = {}) {
-  const normalizedPrefix = normalizeSlugSegment(prefix, "wecom", 20);
+  const normalizedPrefix = normalizeSlugSegment(prefix, "wechat_work", 20);
   const normalizedAccount = normalizeSlugSegment(accountId, "default", 20);
   const kind = isGroupChat ? "group" : "dm";
   const sourceRaw = String(isGroupChat ? chatId : fromUser).trim();
@@ -188,7 +188,7 @@ function resolveDeterministicDynamicSelection({
     fromUser,
     chatId,
     isGroupChat,
-    prefix: dynamicConfig?.deterministicPrefix || "wecom",
+    prefix: dynamicConfig?.deterministicPrefix || "wechat_work",
     idStrategy: dynamicConfig?.idStrategy || "readable-hash",
   });
   if (!deterministicAgentId) {
@@ -268,7 +268,7 @@ function resolveDynamicAgentSelection({
 export function resolveWecomAgentRoute({
   runtime,
   cfg,
-  channel = "wecom",
+  channel = "wechat_work",
   accountId = "default",
   sessionKey = "",
   fromUser = "",

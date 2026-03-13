@@ -51,11 +51,11 @@ export function buildWecomBotInboundContextPayload({
     ConversationLabel: isGroupChat && chatId ? `group:${chatId}` : fromUser,
     SenderName: fromUser,
     SenderId: normalizedSenderId,
-    Provider: "wecom",
-    Surface: "wecom-bot",
-    MessageSid: msgId || `wecom-bot-${timestamp}`,
+    Provider: "wechat_work",
+    Surface: "wechat_work-bot",
+    MessageSid: msgId || `wechat_work-bot-${timestamp}`,
     Timestamp: timestamp,
-    OriginatingChannel: "wecom",
+    OriginatingChannel: "wechat_work",
     OriginatingTo: fromAddress,
   };
 }

@@ -66,7 +66,7 @@ test("prepareWecomBotRuntimeContext builds route/context and records session", a
   assert.equal(result.sessionRuntimeId, "runtime-session-1");
   assert.equal(recordedSessions.length, 1);
   assert.equal(activities.length, 1);
-  assert.equal(activities[0].channel, "wecom");
+  assert.equal(activities[0].channel, "wechat_work");
   assert.ok(logs.some((line) => line.includes("wecom(bot): routed agent=main")));
 });
 

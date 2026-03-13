@@ -86,7 +86,7 @@ export function createWecomRegisterRuntime({
         `wecom(bot): config loaded (accounts=${enabledBotConfigs.length}, webhook=${webhookSummary}, streamExpireMs=${botModeConfig.streamExpireMs})`,
       );
     } else {
-      api.logger.warn?.("wecom: no configuration found (check channels.wecom in openclaw.json)");
+      api.logger.warn?.("wecom: no configuration found (check channels.wechat_work in openclaw.json)");
     }
     api.logger.info?.(
       `wecom: stream.manager ${streamManagerPolicy.enabled ? "on" : "off"} (timeoutMs=${streamManagerPolicy.timeoutMs}, perSession=${streamManagerPolicy.maxConcurrentPerSession})`,

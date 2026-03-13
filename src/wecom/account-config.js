@@ -79,7 +79,7 @@ export function createWecomAccountRegistry({
 
   function rebuildWecomAccounts({ api, gatewayRuntime } = {}) {
     const cfg = api?.config ?? gatewayRuntime?.config ?? {};
-    const channelConfig = cfg?.channels?.wecom;
+    const channelConfig = cfg?.channels?.wechat_work;
     const envVars = cfg?.env?.vars ?? {};
     const globalWebhookTargets = normalizeWecomWebhookTargetMap(
       channelConfig?.webhooks,

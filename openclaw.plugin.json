@@ -15,7 +15,7 @@
     "patternProperties": {
       "^(?!(name|enabled|corpId|corpSecret|agentId|callbackToken|token|callbackAesKey|encodingAesKey|webhookPath|agent|bot|delivery|webhookBot|stream|observability|outboundProxy|webhooks|allowFrom|allowFromRejectMessage|adminUsers|commandAllowlist|commandBlockMessage|commands|workspaceTemplate|groupChat|dynamicAgent|dynamicAgents|dm|debounce|streaming|voiceTranscription|defaultAccount|tools|accounts)$)[A-Za-z0-9_-]+$": {
         "type": "object",
-        "description": "兼容旧配置：inline 多账户（推荐迁移到 channels.wecom.accounts.<id>）"
+        "description": "兼容旧配置：inline 多账户（推荐迁移到 channels.wechat_work.accounts.<id>）"
       }
     },
     "properties": {
@@ -966,7 +966,7 @@
             },
             "bot": {
               "type": "object",
-              "description": "该账户专用 Bot 模式配置（覆盖 channels.wecom.bot）",
+              "description": "该账户专用 Bot 模式配置（覆盖 channels.wechat_work.bot）",
               "additionalProperties": false,
               "properties": {
                 "enabled": {
@@ -1081,7 +1081,7 @@
                 },
                 "card": {
                   "type": "object",
-                  "description": "该账户 Bot 卡片回包策略（覆盖 channels.wecom.bot.card）",
+                  "description": "该账户 Bot 卡片回包策略（覆盖 channels.wechat_work.bot.card）",
                   "additionalProperties": false,
                   "properties": {
                     "enabled": {
@@ -1131,7 +1131,7 @@
                 },
                 "outboundProxy": {
                   "type": "string",
-                  "description": "可选：该账户 Bot 回调媒体下载/回包专用代理（覆盖 channels.wecom.bot/outboundProxy）"
+                  "description": "可选：该账户 Bot 回调媒体下载/回包专用代理（覆盖 channels.wechat_work.bot/outboundProxy）"
                 },
                 "proxyUrl": {
                   "type": "string",
@@ -1145,11 +1145,11 @@
             },
             "outboundProxy": {
               "type": "string",
-              "description": "可选：该账户专用 WeCom 出站 API 代理（覆盖 channels.wecom.outboundProxy）"
+              "description": "可选：该账户专用 WeCom 出站 API 代理（覆盖 channels.wechat_work.outboundProxy）"
             },
             "tools": {
               "type": "object",
-              "description": "该账户专用 OpenClaw 工具能力开关（覆盖 channels.wecom.tools）",
+              "description": "该账户专用 OpenClaw 工具能力开关（覆盖 channels.wechat_work.tools）",
               "additionalProperties": false,
               "properties": {
                 "doc": {
@@ -1166,7 +1166,7 @@
             },
             "webhooks": {
               "type": "object",
-              "description": "可选：该账户专用命名 Webhook 目标映射（覆盖 channels.wecom.webhooks 同名项）",
+              "description": "可选：该账户专用命名 Webhook 目标映射（覆盖 channels.wechat_work.webhooks 同名项）",
               "additionalProperties": {
                 "type": "string",
                 "minLength": 1
@@ -1174,7 +1174,7 @@
             },
             "allowFrom": {
               "type": "array",
-              "description": "可选：该账户专用发送者允许列表（覆盖 channels.wecom.allowFrom）",
+              "description": "可选：该账户专用发送者允许列表（覆盖 channels.wechat_work.allowFrom）",
               "items": {
                 "type": "string",
                 "minLength": 1
@@ -1182,11 +1182,11 @@
             },
             "allowFromRejectMessage": {
               "type": "string",
-              "description": "可选：该账户发送者未授权时的拒绝文案（覆盖 channels.wecom.allowFromRejectMessage）"
+              "description": "可选：该账户发送者未授权时的拒绝文案（覆盖 channels.wechat_work.allowFromRejectMessage）"
             },
             "dm": {
               "type": "object",
-              "description": "可选：该账户私聊策略（覆盖 channels.wecom.dm）",
+              "description": "可选：该账户私聊策略（覆盖 channels.wechat_work.dm）",
               "additionalProperties": false,
               "properties": {
                 "mode": {
@@ -1215,7 +1215,7 @@
             },
             "events": {
               "type": "object",
-              "description": "可选：该账户事件策略（覆盖 channels.wecom.events）",
+              "description": "可选：该账户事件策略（覆盖 channels.wechat_work.events）",
               "additionalProperties": false,
               "properties": {
                 "enabled": {
@@ -1302,11 +1302,11 @@
     }
   },
   "channel": {
-    "id": "wecom",
+    "id": "wechat_work",
     "label": "企业微信 WeCom",
     "selectionLabel": "企业微信 WeCom（自建应用/Bot）",
-    "docsPath": "/channels/wecom",
-    "docsLabel": "wecom",
+    "docsPath": "/channels/wechat_work",
+    "docsLabel": "wechat_work",
     "blurb": "企业微信消息通道（自建应用回调 + Bot 回调 + 发送 API）。",
     "order": 80,
     "aliases": [

@@ -59,12 +59,12 @@ test("buildWecomInboundContextPayload builds direct context payload", () => {
   assert.equal(payload.ConversationLabel, "dingxiang");
   assert.equal(payload.SenderName, "dingxiang");
   assert.equal(payload.SenderId, "dingxiang");
-  assert.equal(payload.Provider, "wecom");
-  assert.equal(payload.Surface, "wecom");
+  assert.equal(payload.Provider, "wechat_work");
+  assert.equal(payload.Surface, "wechat_work");
   assert.equal(payload.MessageSid, "msg-1");
   assert.equal(payload.Timestamp, 456);
-  assert.equal(payload.OriginatingChannel, "wecom");
-  assert.equal(payload.OriginatingTo, "wecom:dingxiang");
+  assert.equal(payload.OriginatingChannel, "wechat_work");
+  assert.equal(payload.OriginatingTo, "wechat_work:dingxiang");
 });
 
 test("buildWecomInboundContextPayload normalizes SenderId to lowercase", () => {

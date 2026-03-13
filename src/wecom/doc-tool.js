@@ -427,7 +427,7 @@ export function createWecomDocToolRegistrar({
   return function registerWecomDocTools(api) {
     if (typeof api?.registerTool !== "function") return;
     if (!readChannelDocEnabled(api)) {
-      api.logger?.info?.("wecom_doc: disabled by channels.wecom.tools.doc=false");
+      api.logger?.info?.("wecom_doc: disabled by channels.wechat_work.tools.doc=false");
       return;
     }
 

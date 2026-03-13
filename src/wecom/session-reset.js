@@ -117,7 +117,7 @@ export function createWecomSessionResetter({ dateNow = Date.now } = {}) {
     const route = resolveWecomAgentRoute({
       runtime,
       cfg,
-      channel: "wecom",
+      channel: "wechat_work",
       accountId: normalizedAccountId,
       sessionKey: baseSessionId,
       fromUser,

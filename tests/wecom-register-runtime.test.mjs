@@ -48,7 +48,7 @@ test("register logs startup and registers channel/routes", () => {
     resolveWecomBotConfigs: () => [{ accountId: "default", enabled: false }],
     listEnabledWecomAccounts: () => [{ accountId: "default", enabled: true, corpId: "ww1", agentId: "1001", callbackToken: "t1" }],
     getWecomConfig: () => ({ corpId: "ww12345678", outboundProxy: "" }),
-    wecomChannelPlugin: { id: "wecom" },
+    wecomChannelPlugin: { id: "wechat_work" },
     registerWecomDocTools() {
       calls.registerTool += 1;
     },
@@ -94,7 +94,7 @@ test("register warns when no route available", () => {
     resolveWecomBotConfigs: () => [{ accountId: "default", enabled: false }],
     listEnabledWecomAccounts: () => [],
     getWecomConfig: () => null,
-    wecomChannelPlugin: { id: "wecom" },
+    wecomChannelPlugin: { id: "wechat_work" },
     registerWecomDocTools() {},
     wecomRouteRegistrar: {
       registerWecomBotWebhookRoute() {
@@ -131,7 +131,7 @@ test("register emits account diagnosis warnings for duplicate credentials", () =
       { accountId: "sales", enabled: true, corpId: "ww-b", agentId: "1002", callbackToken: "dup-token" },
     ],
     getWecomConfig: () => ({ corpId: "ww-a", outboundProxy: "" }),
-    wecomChannelPlugin: { id: "wecom" },
+    wecomChannelPlugin: { id: "wechat_work" },
     registerWecomDocTools() {},
     wecomRouteRegistrar: {
       registerWecomBotWebhookRoute() {

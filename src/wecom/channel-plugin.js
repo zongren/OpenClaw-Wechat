@@ -33,7 +33,7 @@ function normalizeTimestampMs(value) {
 
 function resolveBotCallbackConfig(cfg, accountId = "default") {
   const normalizedAccountId = readString(accountId).toLowerCase() || "default";
-  const channelConfig = cfg?.channels?.wecom;
+  const channelConfig = cfg?.channels?.wechat_work;
   const accountConfig = channelConfig?.accounts?.[normalizedAccountId];
   const accountBot = accountConfig?.bot;
   const channelBot = channelConfig?.bot;
@@ -155,12 +155,12 @@ export function createWecomChannelPlugin({
   assertFunction("sendWecomText", sendWecomText);
 
   return {
-    id: "wecom",
+    id: "wechat_work",
     meta: {
-      id: "wecom",
+      id: "wechat_work",
       label: "企业微信 WeCom",
       selectionLabel: "企业微信 WeCom（自建应用/Bot）",
-      docsPath: "/channels/wecom",
+      docsPath: "/channels/wechat_work",
       blurb: "企业微信消息通道（自建应用回调 + Bot 回调 + 发送 API）。",
       aliases: ["wework", "qiwei", "wxwork"],
     },
@@ -234,7 +234,7 @@ export function createWecomChannelPlugin({
           return { ok: true, provider: "wecom-webhook" };
         }
         if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
-          return { ok: false, error: new Error("WeCom not configured (check channels.wecom in openclaw.json)") };
+          return { ok: false, error: new Error("WeCom not configured (check channels.wechat_work in openclaw.json)") };
         }
         await sendWecomText({
           corpId: config.corpId,
@@ -249,7 +249,7 @@ export function createWecomChannelPlugin({
           proxyUrl: config.outboundProxy,
         });
         runtime?.logger?.info?.(`wecom: outbound sendText target=${formatWecomTargetForLog(target)}`);
-        return { ok: true, provider: "wecom" };
+        return { ok: true, provider: "wechat_work" };
       },
     },
     inbound: {
@@ -291,7 +291,7 @@ export function createWecomChannelPlugin({
           return { ok: true };
         }
         if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
-          throw new Error("WeCom not configured (check channels.wecom in openclaw.json)");
+          throw new Error("WeCom not configured (check channels.wechat_work in openclaw.json)");
         }
         const mediaResult = await sendWecomOutboundMediaBatch({
           corpId: config.corpId,

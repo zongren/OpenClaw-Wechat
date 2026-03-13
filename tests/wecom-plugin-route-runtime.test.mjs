@@ -74,7 +74,7 @@ function createRegisterRuntimeDeps() {
       corpSecret: "sec",
       agentId: "1000001",
     }),
-    wecomChannelPlugin: { id: "wecom" },
+    wecomChannelPlugin: { id: "wechat_work" },
   };
 }
 

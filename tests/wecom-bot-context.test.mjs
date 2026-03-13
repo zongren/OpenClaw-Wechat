@@ -59,12 +59,12 @@ test("buildWecomBotInboundContextPayload builds group payload with defaults", ()
   assert.equal(payload.ConversationLabel, "group:room-1");
   assert.equal(payload.SenderName, "dingxiang");
   assert.equal(payload.SenderId, "dingxiang");
-  assert.equal(payload.Provider, "wecom");
-  assert.equal(payload.Surface, "wecom-bot");
-  assert.equal(payload.MessageSid, "wecom-bot-456");
+  assert.equal(payload.Provider, "wechat_work");
+  assert.equal(payload.Surface, "wechat_work-bot");
+  assert.equal(payload.MessageSid, "wechat_work-bot-456");
   assert.equal(payload.Timestamp, 456);
-  assert.equal(payload.OriginatingChannel, "wecom");
-  assert.equal(payload.OriginatingTo, "wecom-bot:dingxiang");
+  assert.equal(payload.OriginatingChannel, "wechat_work");
+  assert.equal(payload.OriginatingTo, "wechat_work-bot:dingxiang");
 });
 
 test("buildWecomBotInboundContextPayload normalizes SenderId to lowercase", () => {

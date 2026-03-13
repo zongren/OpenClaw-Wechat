@@ -48,7 +48,7 @@ export function isDispatchTimeoutError(err) {
   return text.includes("dispatch timed out after") || text.includes("operation timed out after");
 }
 
-export function createDeliveryTraceId(prefix = "wecom") {
+export function createDeliveryTraceId(prefix = "wechat_work") {
   const stamp = Date.now().toString(36);
   const rand = Math.random().toString(36).slice(2, 10);
   return `${prefix}-${stamp}-${rand}`;

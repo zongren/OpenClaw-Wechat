@@ -122,7 +122,7 @@ test("createPluginRouteRuntimeDeps maps route/runtime dependencies", () => {
     resolveWecomDynamicAgentPolicy: fn,
     listEnabledWecomAccounts: fn,
     getWecomConfig: fn,
-    wecomChannelPlugin: { id: "wecom" },
+    wecomChannelPlugin: { id: "wechat_work" },
   });
   assert.equal(typeof deps.routeRegistrarDeps, "object");
   assert.equal(typeof deps.registerRuntimeDeps, "object");
