@@ -27,7 +27,7 @@ export function createInboundImageVoiceHandlers({
     proxyUrl,
     tempPathsToCleanup,
   }) {
-    api.logger.info?.(`wecom: downloading image mediaId=${mediaId}`);
+    api.logger.info?.(`wechat_work: downloading image mediaId=${mediaId}`);
     let imageBuffer = null;
     let imageMimeType = "";
 
@@ -41,17 +41,17 @@ export function createInboundImageVoiceHandlers({
       });
       imageBuffer = buffer;
       imageMimeType = contentType || "image/jpeg";
-      api.logger.info?.(`wecom: image downloaded, size=${buffer.length} bytes, type=${imageMimeType}`);
+      api.logger.info?.(`wechat_work: image downloaded, size=${buffer.length} bytes, type=${imageMimeType}`);
     } catch (downloadErr) {
-      api.logger.warn?.(`wecom: failed to download image via mediaId: ${downloadErr.message}`);
+      api.logger.warn?.(`wechat_work: failed to download image via mediaId: ${downloadErr.message}`);
       if (picUrl) {
         try {
           const { buffer, contentType } = await fetchMediaFromUrl(picUrl);
           imageBuffer = buffer;
           imageMimeType = contentType || "image/jpeg";
-          api.logger.info?.(`wecom: image downloaded via PicUrl, size=${buffer.length} bytes`);
+          api.logger.info?.(`wechat_work: image downloaded via PicUrl, size=${buffer.length} bytes`);
         } catch (picUrlErr) {
-          api.logger.warn?.(`wecom: failed to download image via PicUrl: ${picUrlErr.message}`);
+          api.logger.warn?.(`wechat_work: failed to download image via PicUrl: ${picUrlErr.message}`);
         }
       }
     }
@@ -63,13 +63,13 @@ export function createInboundImageVoiceHandlers({
         const imageTempPath = join(tempDir, `image-${now()}-${randomSuffix()}.${ext}`);
         await writeFile(imageTempPath, imageBuffer);
         tempPathsToCleanup.push(imageTempPath);
-        api.logger.info?.(`wecom: saved image to ${imageTempPath}`);
+        api.logger.info?.(`wechat_work: saved image to ${imageTempPath}`);
         return {
           aborted: false,
           messageText: `[用户发送了一张图片，已保存到: ${imageTempPath}]\n\n请使用 Read 工具查看这张图片并描述内容。`,
         };
       } catch (saveErr) {
-        api.logger.warn?.(`wecom: failed to save image: ${saveErr.message}`);
+        api.logger.warn?.(`wechat_work: failed to save image: ${saveErr.message}`);
         return {
           aborted: false,
           messageText: "[用户发送了一张图片，但保存失败]\n\n请告诉用户图片处理暂时不可用。",
@@ -92,10 +92,10 @@ export function createInboundImageVoiceHandlers({
     recognition,
     proxyUrl,
   }) {
-    api.logger.info?.(`wecom: received voice message mediaId=${mediaId}`);
+    api.logger.info?.(`wechat_work: received voice message mediaId=${mediaId}`);
     const recognizedText = String(recognition ?? "").trim();
     if (recognizedText) {
-      api.logger.info?.(`wecom: voice recognition result from WeCom: ${recognizedText.slice(0, 50)}...`);
+      api.logger.info?.(`wechat_work: voice recognition result from WeCom: ${recognizedText.slice(0, 50)}...`);
       return {
         aborted: false,
         messageText: `[语音消息转写]\n${recognizedText}`,
@@ -104,7 +104,7 @@ export function createInboundImageVoiceHandlers({
 
     const voiceConfig = resolveWecomVoiceTranscriptionConfig(api);
     if (!voiceConfig.enabled) {
-      api.logger.info?.("wecom: voice transcription fallback disabled; asking user to send text");
+      api.logger.info?.("wechat_work: voice transcription fallback disabled; asking user to send text");
       await sendWecomText({
         corpId,
         corpSecret,
@@ -126,7 +126,7 @@ export function createInboundImageVoiceHandlers({
         logger: api.logger,
       });
       api.logger.info?.(
-        `wecom: downloaded voice media for transcription, size=${buffer.length}, type=${contentType || "unknown"}`,
+        `wechat_work: downloaded voice media for transcription, size=${buffer.length}, type=${contentType || "unknown"}`,
       );
       const transcript = await transcribeInboundVoice({
         api,
@@ -135,13 +135,13 @@ export function createInboundImageVoiceHandlers({
         mediaId,
         voiceConfig,
       });
-      api.logger.info?.(`wecom: voice transcribed via ${voiceConfig.model}: ${transcript.slice(0, 80)}...`);
+      api.logger.info?.(`wechat_work: voice transcribed via ${voiceConfig.model}: ${transcript.slice(0, 80)}...`);
       return {
         aborted: false,
         messageText: `[语音消息转写]\n${transcript}`,
       };
     } catch (voiceErr) {
-      api.logger.warn?.(`wecom: voice transcription failed: ${String(voiceErr?.message || voiceErr)}`);
+      api.logger.warn?.(`wechat_work: voice transcription failed: ${String(voiceErr?.message || voiceErr)}`);
       await sendWecomText({
         corpId,
         corpSecret,

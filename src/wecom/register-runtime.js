@@ -76,7 +76,7 @@ export function createWecomRegisterRuntime({
     const cfg = getWecomConfig(api);
     if (cfg) {
       api.logger.info?.(
-        `wecom: config loaded (corpId=${cfg.corpId?.slice(0, 8)}..., proxy=${cfg.outboundProxy ? "on" : "off"})`,
+        `wechat_work: config loaded (corpId=${cfg.corpId?.slice(0, 8)}..., proxy=${cfg.outboundProxy ? "on" : "off"})`,
       );
     } else if (enabledBotConfigs.length > 0) {
       const webhookSummary = Array.from(
@@ -86,17 +86,17 @@ export function createWecomRegisterRuntime({
         `wecom(bot): config loaded (accounts=${enabledBotConfigs.length}, webhook=${webhookSummary}, streamExpireMs=${botModeConfig.streamExpireMs})`,
       );
     } else {
-      api.logger.warn?.("wecom: no configuration found (check channels.wechat_work in openclaw.json)");
+      api.logger.warn?.("wechat_work: no configuration found (check channels.wechat_work in openclaw.json)");
     }
     api.logger.info?.(
-      `wecom: stream.manager ${streamManagerPolicy.enabled ? "on" : "off"} (timeoutMs=${streamManagerPolicy.timeoutMs}, perSession=${streamManagerPolicy.maxConcurrentPerSession})`,
+      `wechat_work: stream.manager ${streamManagerPolicy.enabled ? "on" : "off"} (timeoutMs=${streamManagerPolicy.timeoutMs}, perSession=${streamManagerPolicy.maxConcurrentPerSession})`,
     );
     api.logger.info?.(
-      `wecom: delivery.fallback ${fallbackPolicy.enabled ? "on" : "off"} (order=${fallbackPolicy.order.join(">")})`,
+      `wechat_work: delivery.fallback ${fallbackPolicy.enabled ? "on" : "off"} (order=${fallbackPolicy.order.join(">")})`,
     );
     if (webhookBotPolicy.enabled) {
       api.logger.info?.(
-        `wecom: webhookBot fallback enabled (${webhookBotPolicy.url || webhookBotPolicy.key ? "configured" : "missing-url"})`,
+        `wechat_work: webhookBot fallback enabled (${webhookBotPolicy.url || webhookBotPolicy.key ? "configured" : "missing-url"})`,
       );
     }
     let longConnectionStarted = 0;
@@ -109,12 +109,12 @@ export function createWecomRegisterRuntime({
     }
     if (observabilityPolicy.enabled) {
       api.logger.info?.(
-        `wecom: observability enabled (payloadMeta=${observabilityPolicy.logPayloadMeta ? "on" : "off"})`,
+        `wechat_work: observability enabled (payloadMeta=${observabilityPolicy.logPayloadMeta ? "on" : "off"})`,
       );
     }
     if (dynamicAgentPolicy.enabled) {
       api.logger.info?.(
-        `wecom: dynamic-agent on (mode=${dynamicAgentPolicy.mode}, userMap=${Object.keys(dynamicAgentPolicy.userMap || {}).length}, groupMap=${Object.keys(dynamicAgentPolicy.groupMap || {}).length}, mentionMap=${Object.keys(dynamicAgentPolicy.mentionMap || {}).length})`,
+        `wechat_work: dynamic-agent on (mode=${dynamicAgentPolicy.mode}, userMap=${Object.keys(dynamicAgentPolicy.userMap || {}).length}, groupMap=${Object.keys(dynamicAgentPolicy.groupMap || {}).length}, mentionMap=${Object.keys(dynamicAgentPolicy.mentionMap || {}).length})`,
       );
     }
     if (typeof listEnabledWecomAccounts === "function") {
@@ -123,7 +123,7 @@ export function createWecomRegisterRuntime({
         botConfigs: enabledBotConfigs,
       });
       for (const issue of accountDiagnostics.issues) {
-        const line = `wecom: account diagnosis ${issue.code} ${issue.message}`;
+        const line = `wechat_work: account diagnosis ${issue.code} ${issue.message}`;
         if (issue.severity === "warn") api.logger.warn?.(line);
         else api.logger.info?.(line);
       }
@@ -136,7 +136,7 @@ export function createWecomRegisterRuntime({
     const botRouteRegistered = wecomRouteRegistrar.registerWecomBotWebhookRoute(api);
     const webhookGroups = wecomRouteRegistrar.registerWecomAgentWebhookRoutes(api);
     if (webhookGroups.size === 0 && !botRouteRegistered && longConnectionStarted === 0) {
-      api.logger.warn?.("wecom: no enabled account with valid config found; webhook route not registered");
+      api.logger.warn?.("wechat_work: no enabled account with valid config found; webhook route not registered");
       return;
     }
   }

@@ -57,13 +57,13 @@ export function createWecomTypedMessageSender({
       const sendJson = await sendRes.json();
       if (sendJson?.errcode !== 0) {
         const errorMsg = `WeCom ${isAppChat ? "appchat/send" : "message/send"} failed: ${JSON.stringify(sendJson)}`;
-        logger?.error?.(`wecom: API call failed - ${errorMsg}`);
+        logger?.error?.(`wechat_work: API call failed - ${errorMsg}`);
         if (errorPrefix) {
           throw new Error(`${errorPrefix}: ${JSON.stringify(sendJson)}`);
         }
         throw new Error(errorMsg);
       }
-      logger?.info?.(`wecom: API call success - msgid=${sendJson?.msgid || "n/a"} errcode=${sendJson?.errcode}`);
+      logger?.info?.(`wechat_work: API call success - msgid=${sendJson?.msgid || "n/a"} errcode=${sendJson?.errcode}`);
       return sendJson;
     });
   };

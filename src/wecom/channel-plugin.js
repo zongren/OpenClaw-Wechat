@@ -230,7 +230,7 @@ export function createWecomChannelPlugin({
             logger: runtime?.logger,
             proxyUrl: config?.outboundProxy,
           });
-          runtime?.logger?.info?.(`wecom: outbound sendText target=${formatWecomTargetForLog(target)}`);
+          runtime?.logger?.info?.(`wechat_work: outbound sendText target=${formatWecomTargetForLog(target)}`);
           return { ok: true, provider: "wecom-webhook" };
         }
         if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
@@ -248,7 +248,7 @@ export function createWecomChannelPlugin({
           logger: runtime?.logger,
           proxyUrl: config.outboundProxy,
         });
-        runtime?.logger?.info?.(`wecom: outbound sendText target=${formatWecomTargetForLog(target)}`);
+        runtime?.logger?.info?.(`wechat_work: outbound sendText target=${formatWecomTargetForLog(target)}`);
         return { ok: true, provider: "wechat_work" };
       },
     },
@@ -273,7 +273,7 @@ export function createWecomChannelPlugin({
           });
           if (webhookMediaResult.failed.length > 0) {
             runtime?.logger?.warn?.(
-              `wecom: webhook target failed to send ${webhookMediaResult.failed.length} media item(s)`,
+              `wechat_work: webhook target failed to send ${webhookMediaResult.failed.length} media item(s)`,
             );
           }
           if (text) {
@@ -308,7 +308,7 @@ export function createWecomChannelPlugin({
           proxyUrl,
         });
         if (mediaResult.failed.length > 0) {
-          runtime?.logger?.warn?.(`wecom: failed to send ${mediaResult.failed.length} outbound media item(s)`);
+          runtime?.logger?.warn?.(`wechat_work: failed to send ${mediaResult.failed.length} outbound media item(s)`);
         }
         if (text) {
           await sendWecomText({

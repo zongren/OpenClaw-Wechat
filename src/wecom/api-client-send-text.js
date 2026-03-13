@@ -41,7 +41,7 @@ export function createWecomTextSender({
     });
     const isAppChat = Boolean(chatId);
     const targetLabel = isAppChat ? `chat:${chatId}` : [toUser, toParty, toTag].filter(Boolean).join("|");
-    logger?.info?.(`wecom: message sent ok (to=${targetLabel || "unknown"}, msgid=${sendJson?.msgid || "n/a"})`);
+    logger?.info?.(`wechat_work: message sent ok (to=${targetLabel || "unknown"}, msgid=${sendJson?.msgid || "n/a"})`);
     return sendJson;
   }
 
@@ -58,10 +58,10 @@ export function createWecomTextSender({
     proxyUrl,
   }) {
     const chunks = splitWecomText(text);
-    logger?.info?.(`wecom: splitting message into ${chunks.length} chunks, total bytes=${getByteLength(text)}`);
+    logger?.info?.(`wechat_work: splitting message into ${chunks.length} chunks, total bytes=${getByteLength(text)}`);
 
     for (let i = 0; i < chunks.length; i += 1) {
-      logger?.info?.(`wecom: sending chunk ${i + 1}/${chunks.length}, bytes=${getByteLength(chunks[i])}`);
+      logger?.info?.(`wechat_work: sending chunk ${i + 1}/${chunks.length}, bytes=${getByteLength(chunks[i])}`);
       // eslint-disable-next-line no-await-in-loop
       await sendWecomTextSingle({
         corpId,

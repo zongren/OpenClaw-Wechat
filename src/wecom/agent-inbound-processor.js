@@ -87,7 +87,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
   }) {
     const config = getWecomConfig(api, accountId);
     if (!config?.corpId || !config?.corpSecret || !config?.agentId) {
-      api.logger.warn?.("wecom: not configured (check channels.wechat_work in openclaw.json)");
+      api.logger.warn?.("wechat_work: not configured (check channels.wechat_work in openclaw.json)");
       return;
     }
 
@@ -109,12 +109,12 @@ export function createWecomAgentInboundProcessor(deps = {}) {
       let sessionId = baseSessionId;
       let routedAgentId = "";
       const normalizedFromUser = String(fromUser ?? "").trim().toLowerCase();
-      const fromAddress = `wecom:${normalizedFromUser}`;
+      const fromAddress = `wechat_work:${normalizedFromUser}`;
       const originalContent = content || "";
       let commandBody = originalContent;
       const groupChatPolicy = resolveWecomGroupChatPolicy(api);
       const dynamicAgentPolicy = resolveWecomDynamicAgentPolicy(api);
-      api.logger.info?.(`wecom: processing ${msgType} message for session ${sessionId}${isGroupChat ? " (group)" : ""}`);
+      api.logger.info?.(`wechat_work: processing ${msgType} message for session ${sessionId}${isGroupChat ? " (group)" : ""}`);
 
       const guardResult = await applyWecomAgentInboundGuards({
         api,
@@ -154,18 +154,18 @@ export function createWecomAgentInboundProcessor(deps = {}) {
         const normalizedEventType = String(eventType ?? "").trim().toLowerCase();
         const eventPolicy = resolveWecomEventPolicy(api, config.accountId || accountId, config);
         if (!eventPolicy?.enabled) {
-          api.logger.info?.(`wecom: event skipped (disabled) type=${normalizedEventType || "unknown"}`);
+          api.logger.info?.(`wechat_work: event skipped (disabled) type=${normalizedEventType || "unknown"}`);
           return;
         }
         if (normalizedEventType === "enter_agent" && eventPolicy.enterAgentWelcomeEnabled) {
           const welcomeText = String(eventPolicy.enterAgentWelcomeText ?? "").trim();
           if (welcomeText) {
             await sendTextToUser(welcomeText);
-            api.logger.info?.(`wecom: enter_agent welcome sent account=${config.accountId || accountId}`);
+            api.logger.info?.(`wechat_work: enter_agent welcome sent account=${config.accountId || accountId}`);
           }
           return;
         }
-        api.logger.info?.(`wecom: event ignored type=${normalizedEventType || "unknown"}`);
+        api.logger.info?.(`wechat_work: event ignored type=${normalizedEventType || "unknown"}`);
         return;
       }
       if (!guardResult.ok) return;
@@ -175,7 +175,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
 
       if (commandKey === "/reset") {
         if (typeof resetWecomConversationSession !== "function") {
-          api.logger.warn?.("wecom: local /reset requested but resetWecomConversationSession is unavailable");
+          api.logger.warn?.("wechat_work: local /reset requested but resetWecomConversationSession is unavailable");
           await sendTextToUser("当前会话重置能力未启用，请联系管理员。");
           return;
         }
@@ -222,7 +222,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
       const messageText = String(inboundResult.messageText ?? "");
       const tempPathsToCleanup = Array.isArray(inboundResult.tempPathsToCleanup) ? inboundResult.tempPathsToCleanup : [];
       if (!messageText) {
-        api.logger.warn?.("wecom: empty message content");
+        api.logger.warn?.("wechat_work: empty message content");
         return;
       }
 
@@ -255,7 +255,7 @@ export function createWecomAgentInboundProcessor(deps = {}) {
       const ctxPayload = runtimeContext.ctxPayload;
       const runtimeAccountId = runtimeContext.accountId;
 
-      api.logger.info?.(`wecom: dispatching message via agent runtime for session ${sessionId}`);
+      api.logger.info?.(`wechat_work: dispatching message via agent runtime for session ${sessionId}`);
       await executeWecomAgentDispatchFlow({
         api,
         runtime,

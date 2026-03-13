@@ -31,7 +31,7 @@ export function createDynamicWorkspaceSeeder({
     try {
       entries = await readdirImpl(templateDir, { withFileTypes: true });
     } catch (err) {
-      api?.logger?.warn?.(`wecom: workspaceTemplate unavailable (${templateDir}): ${String(err?.message || err)}`);
+      api?.logger?.warn?.(`wechat_work: workspaceTemplate unavailable (${templateDir}): ${String(err?.message || err)}`);
       return;
     }
 
@@ -53,13 +53,13 @@ export function createDynamicWorkspaceSeeder({
       }
       await copyFileImpl(sourcePath, destPath);
       copiedCount += 1;
-      api?.logger?.info?.(`wecom: seeded workspace file agent=${normalizedAgentId} file=${fileName}`);
+      api?.logger?.info?.(`wechat_work: seeded workspace file agent=${normalizedAgentId} file=${fileName}`);
     }
 
     seededAgentWorkspaces.add(cacheKey);
     if (copiedCount > 0) {
       api?.logger?.info?.(
-        `wecom: workspace template seeded agent=${normalizedAgentId} files=${copiedCount} dir=${workspaceDir}`,
+        `wechat_work: workspace template seeded agent=${normalizedAgentId} files=${copiedCount} dir=${workspaceDir}`,
       );
     }
   }

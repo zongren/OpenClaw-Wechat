@@ -214,7 +214,7 @@ export function createWecomRouteRegistrar({
         if (!legacyAliasPath || legacyAliasPath === normalizedPath) continue;
         if (botPathSet.has(legacyAliasPath)) {
           api.logger.warn?.(
-            `wecom: skip legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId} (conflicts with bot webhook path)`,
+            `wechat_work: skip legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId} (conflicts with bot webhook path)`,
           );
           continue;
         }
@@ -229,7 +229,7 @@ export function createWecomRouteRegistrar({
         } else {
           grouped.set(legacyAliasPath, [account]);
         }
-        api.logger.info?.(`wecom: registered legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId}`);
+        api.logger.info?.(`wechat_work: registered legacy agent alias ${legacyAliasPath} for account=${normalizedAccountId}`);
       }
     }
 
@@ -258,7 +258,7 @@ export function createWecomRouteRegistrar({
       });
 
       const accountIds = accounts.map((a) => a.accountId).join(", ");
-      api.logger.info?.(`wecom: registered webhook at ${normalizedPath} (accounts=${accountIds})`);
+      api.logger.info?.(`wechat_work: registered webhook at ${normalizedPath} (accounts=${accountIds})`);
     }
     return webhookGroups;
   }

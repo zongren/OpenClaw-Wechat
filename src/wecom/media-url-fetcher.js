@@ -17,7 +17,7 @@ export function createWecomMediaFetcher({ fetchWithRetry, buildMediaFetchErrorMe
         throw new Error(`Media too large (${buffer.length} bytes > ${maxBytes} bytes)`);
       }
       const contentType = guessContentTypeByPath(localPath);
-      logger?.info?.(`wecom: loaded local media ${localPath} (${buffer.length} bytes)`);
+      logger?.info?.(`wechat_work: loaded local media ${localPath} (${buffer.length} bytes)`);
       return {
         buffer,
         contentType,

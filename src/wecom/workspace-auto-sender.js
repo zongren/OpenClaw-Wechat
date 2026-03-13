@@ -114,7 +114,7 @@ export function createWorkspaceAutoSender({
 
     if (sentPaths.length > 0) {
       logger?.info?.(
-        `wecom: auto-sent workspace files agent=${normalizedRouteAgentId} sent=${sentPaths.length} detected=${workspacePaths.length}`,
+        `wechat_work: auto-sent workspace files agent=${normalizedRouteAgentId} sent=${sentPaths.length} detected=${workspacePaths.length}`,
       );
     }
 

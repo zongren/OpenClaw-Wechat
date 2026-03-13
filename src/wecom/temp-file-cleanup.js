@@ -5,7 +5,7 @@ export function createTempFileCleanupScheduler({ unlinkImpl = unlink, defaultRet
     if (!filePath) return;
     const timer = setTimeout(() => {
       unlinkImpl(filePath).catch((err) => {
-        logger?.warn?.(`wecom: failed to cleanup temp file ${filePath}: ${String(err?.message || err)}`);
+        logger?.warn?.(`wechat_work: failed to cleanup temp file ${filePath}: ${String(err?.message || err)}`);
       });
     }, delayMs);
     timer.unref?.();

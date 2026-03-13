@@ -81,7 +81,7 @@ export function createWecomAgentMediaSender({
             proxyUrl,
           });
           logger?.info?.(
-            `wecom: tiny file fallback as text (${buffer.length} bytes) target=${candidate.slice(0, 120)}`,
+            `wechat_work: tiny file fallback as text (${buffer.length} bytes) target=${candidate.slice(0, 120)}`,
           );
           sentCount += 1;
           continue;
@@ -154,7 +154,7 @@ export function createWecomAgentMediaSender({
           url: candidate,
           reason: String(err?.message || err),
         });
-        logger?.warn?.(`wecom: failed to send outbound media ${candidate}: ${String(err?.message || err)}`);
+        logger?.warn?.(`wechat_work: failed to send outbound media ${candidate}: ${String(err?.message || err)}`);
       }
     }
 

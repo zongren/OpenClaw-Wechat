@@ -69,7 +69,7 @@ export function createWecomWebhookOutboundSender({
         await sleep(200);
       }
     }
-    logger?.info?.(`wecom: webhook text sent chunks=${chunks.length}`);
+    logger?.info?.(`wechat_work: webhook text sent chunks=${chunks.length}`);
   }
 
   async function sendWecomWebhookMediaBatch({
@@ -136,7 +136,7 @@ export function createWecomWebhookOutboundSender({
           url: candidate,
           reason: String(err?.message || err),
         });
-        logger?.warn?.(`wecom: webhook media send failed ${candidate}: ${String(err?.message || err)}`);
+        logger?.warn?.(`wechat_work: webhook media send failed ${candidate}: ${String(err?.message || err)}`);
       }
     }
     return {

@@ -76,7 +76,7 @@ export function createWecomVoiceTranscriber({
         timeoutMs,
       });
       const outputBuffer = await readFile(outputPath);
-      logger?.info?.(`wecom: transcoded voice to wav size=${outputBuffer.length} bytes`);
+      logger?.info?.(`wechat_work: transcoded voice to wav size=${outputBuffer.length} bytes`);
       return {
         buffer: outputBuffer,
         contentType: "audio/wav",

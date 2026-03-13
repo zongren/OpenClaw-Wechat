@@ -105,9 +105,9 @@ export function buildWecomSessionId(userId, accountId = "default") {
   const normalizedUserId = String(userId ?? "").trim().toLowerCase();
   const normalizedAccountId = String(accountId ?? "default").trim().toLowerCase() || "default";
   if (normalizedAccountId === "default") {
-    return `wecom:${normalizedUserId}`;
+    return `wechat_work:${normalizedUserId}`;
   }
-  return `wecom:${normalizedAccountId}:${normalizedUserId}`;
+  return `wechat_work:${normalizedAccountId}:${normalizedUserId}`;
 }
 
 export function buildInboundDedupeKey(msgObj, namespace = "default") {

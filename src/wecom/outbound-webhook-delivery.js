@@ -78,7 +78,7 @@ export function createWecomWebhookBotDeliverer({
           usedCardMode = "markdown";
         }
       } catch (err) {
-        api?.logger?.warn?.(`wecom: webhook bot card send failed, fallback to text: ${String(err?.message || err)}`);
+        api?.logger?.warn?.(`wechat_work: webhook bot card send failed, fallback to text: ${String(err?.message || err)}`);
       }
     }
 

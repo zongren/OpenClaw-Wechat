@@ -93,7 +93,7 @@ export function createVoiceTranscriptionProcessRuntime({
     ffmpegPathCheckCache.checked = true;
     ffmpegPathCheckCache.available = available;
     if (!available) {
-      logger?.warn?.("wecom: ffmpeg not available");
+      logger?.warn?.("wechat_work: ffmpeg not available");
     }
     return available;
   }
@@ -119,7 +119,7 @@ export function createVoiceTranscriptionProcessRuntime({
       // eslint-disable-next-line no-await-in-loop
       if (await checkCommandAvailable(cmd)) {
         if (explicitCommand && cmd !== explicitCommand) {
-          logger?.warn?.(`wecom: voice command ${explicitCommand} unavailable, fallback to ${cmd}`);
+          logger?.warn?.(`wechat_work: voice command ${explicitCommand} unavailable, fallback to ${cmd}`);
         }
         return cmd;
       }

@@ -17,12 +17,12 @@ export async function finalizeWecomAgentVisiblePartialReply({
   if (state.hasDeliveredReply || !state.hasDeliveredPartialReply) return false;
 
   api?.logger?.info?.(
-    `wecom: finalizing partial reply (${reason}), streamChunkSentCount=${state.streamChunkSentCount}`,
+    `wechat_work: finalizing partial reply (${reason}), streamChunkSentCount=${state.streamChunkSentCount}`,
   );
   await flushStreamingBuffer({ force: true, reason });
   await state.streamChunkSendChain;
   state.hasDeliveredReply = true;
-  api?.logger?.info?.(`wecom: finalized visible partial reply (${reason})`);
+  api?.logger?.info?.(`wechat_work: finalized visible partial reply (${reason})`);
   return true;
 }
 
@@ -64,7 +64,7 @@ export async function handleWecomAgentPostDispatchFallback({
     if (blockText) {
       await sendTextToUser(markdownToWecomText(blockText));
       state.hasDeliveredReply = true;
-      logger?.info?.("wecom: delivered accumulated block reply as final fallback");
+      logger?.info?.("wechat_work: delivered accumulated block reply as final fallback");
       return;
     }
   }
@@ -75,13 +75,13 @@ export async function handleWecomAgentPostDispatchFallback({
   const queuedFinal = dispatchResult?.queuedFinal === true;
   const deliveredCount = Number(counts.final ?? 0) + Number(counts.block ?? 0) + Number(counts.tool ?? 0);
   if (!queuedFinal && deliveredCount === 0) {
-    logger?.warn?.("wecom: no immediate deliverable reply (likely queued behind active run)");
+    logger?.warn?.("wechat_work: no immediate deliverable reply (likely queued behind active run)");
     await sendProgressNotice(queuedNoticeText);
     await startLateReplyWatcher("queued-no-final");
     return;
   }
 
-  logger?.warn?.("wecom: dispatch finished without direct final delivery; waiting via late watcher");
+  logger?.warn?.("wechat_work: dispatch finished without direct final delivery; waiting via late watcher");
   await sendProgressNotice(processingNoticeText);
   await startLateReplyWatcher("dispatch-finished-without-final");
 }

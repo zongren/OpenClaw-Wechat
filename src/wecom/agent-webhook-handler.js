@@ -72,7 +72,7 @@ export function createWecomAgentWebhookHandler({
         res.statusCode = 200;
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.end(plainEchostr);
-        api.logger.info?.(`wecom: verified callback URL for account=${matchedAccount.accountId}`);
+        api.logger.info?.(`wechat_work: verified callback URL for account=${matchedAccount.accountId}`);
         return;
       }
 
@@ -92,7 +92,7 @@ export function createWecomAgentWebhookHandler({
         res.statusCode = 400;
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
         res.end("Invalid request body");
-        api.logger.warn?.(`wecom: failed to parse callback body: ${String(err?.message || err)}`);
+        api.logger.warn?.(`wechat_work: failed to parse callback body: ${String(err?.message || err)}`);
         return;
       }
 
@@ -129,18 +129,18 @@ export function createWecomAgentWebhookHandler({
         });
         msgObj = parseIncomingXml(decryptedXml);
       } catch (err) {
-        api.logger.error?.(`wecom: failed to decrypt payload for account=${matchedAccount.accountId}: ${String(err?.message || err)}`);
+        api.logger.error?.(`wechat_work: failed to decrypt payload for account=${matchedAccount.accountId}: ${String(err?.message || err)}`);
         return;
       }
 
       if (!markInboundMessageSeen(msgObj, matchedAccount.accountId)) {
-        api.logger.info?.(`wecom: duplicate inbound skipped msgId=${msgObj?.MsgId ?? "n/a"}`);
+        api.logger.info?.(`wechat_work: duplicate inbound skipped msgId=${msgObj?.MsgId ?? "n/a"}`);
         return;
       }
 
       const inbound = extractWecomXmlInboundEnvelope(msgObj);
       if (!inbound?.msgType) {
-        api.logger.warn?.("wecom: inbound message missing MsgType, dropped");
+        api.logger.warn?.("wechat_work: inbound message missing MsgType, dropped");
         return;
       }
       markWecomInboundActivity({
@@ -164,7 +164,7 @@ export function createWecomAgentWebhookHandler({
       });
 
       if (!fromUser) {
-        api.logger.warn?.("wecom: inbound message missing FromUserName, dropped");
+        api.logger.warn?.("wechat_work: inbound message missing FromUserName, dropped");
         return;
       }
 
@@ -181,10 +181,10 @@ export function createWecomAgentWebhookHandler({
         basePayload,
       });
       if (!handled) {
-        api.logger.info?.(`wecom: ignoring unsupported message type=${msgType}`);
+        api.logger.info?.(`wechat_work: ignoring unsupported message type=${msgType}`);
       }
     } catch (err) {
-      api.logger.error?.(`wecom: webhook handler failed: ${String(err?.message || err)}`);
+      api.logger.error?.(`wechat_work: webhook handler failed: ${String(err?.message || err)}`);
       recordRuntimeErrorMetric({
         scope: "agent-webhook",
         reason: String(err?.message || err),

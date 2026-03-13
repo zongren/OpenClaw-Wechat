@@ -41,12 +41,12 @@ export async function applyWecomAgentInboundGuards({
 
   if (msgType === "text" && isGroupChat) {
     if (!groupChatPolicy.enabled) {
-      api?.logger?.info?.(`wecom: group chat processing disabled, skipped chatId=${chatId || "unknown"}`);
+      api?.logger?.info?.(`wechat_work: group chat processing disabled, skipped chatId=${chatId || "unknown"}`);
       return { ok: false, commandBody: nextCommandBody, isAdminUser: false };
     }
     if (!shouldTriggerWecomGroupResponse(nextCommandBody, groupChatPolicy)) {
       api?.logger?.info?.(
-        `wecom: group message skipped by trigger policy chatId=${chatId || "unknown"} mode=${groupChatPolicy.triggerMode || "direct"}`,
+        `wechat_work: group message skipped by trigger policy chatId=${chatId || "unknown"} mode=${groupChatPolicy.triggerMode || "direct"}`,
       );
       return { ok: false, commandBody: nextCommandBody, isAdminUser: false };
     }
@@ -54,7 +54,7 @@ export async function applyWecomAgentInboundGuards({
       nextCommandBody = stripWecomGroupMentions(nextCommandBody, groupChatPolicy.mentionPatterns);
     }
     if (!nextCommandBody.trim()) {
-      api?.logger?.info?.(`wecom: group message became empty after mention strip chatId=${chatId || "unknown"}`);
+      api?.logger?.info?.(`wechat_work: group message became empty after mention strip chatId=${chatId || "unknown"}`);
       return { ok: false, commandBody: nextCommandBody, isAdminUser: false };
     }
   }
@@ -85,7 +85,7 @@ export async function applyWecomAgentInboundGuards({
   });
   if (!senderAllowed) {
     api?.logger?.warn?.(
-      `wecom: sender blocked by allowFrom account=${config?.accountId || "default"} user=${normalizedFromUser}`,
+      `wechat_work: sender blocked by allowFrom account=${config?.accountId || "default"} user=${normalizedFromUser}`,
     );
     if (allowFromPolicy.rejectMessage) {
       await sendTextToUser(allowFromPolicy.rejectMessage);
@@ -96,7 +96,7 @@ export async function applyWecomAgentInboundGuards({
   if (msgType === "text") {
     let commandKey = extractLeadingSlashCommand(nextCommandBody);
     if (commandKey === "/clear" || commandKey === "/new") {
-      api?.logger?.info?.(`wecom: translating ${commandKey} to native /reset command`);
+      api?.logger?.info?.(`wechat_work: translating ${commandKey} to native /reset command`);
       nextCommandBody = nextCommandBody.replace(/^\/(?:clear|new)\b/i, "/reset");
       commandKey = "/reset";
     }
@@ -106,13 +106,13 @@ export async function applyWecomAgentInboundGuards({
         (commandKey === "/reset" &&
           (commandPolicy.allowlist.includes("/clear") || commandPolicy.allowlist.includes("/new")));
       if (commandPolicy.enabled && !isAdminUser && !commandAllowed) {
-        api?.logger?.info?.(`wecom: command blocked by allowlist user=${fromUser} command=${commandKey}`);
+        api?.logger?.info?.(`wechat_work: command blocked by allowlist user=${fromUser} command=${commandKey}`);
         await sendTextToUser(commandPolicy.rejectMessage);
         return { ok: false, commandBody: nextCommandBody, isAdminUser };
       }
       const handler = COMMANDS?.[commandKey];
       if (typeof handler === "function") {
-        api?.logger?.info?.(`wecom: handling command ${commandKey}`);
+        api?.logger?.info?.(`wechat_work: handling command ${commandKey}`);
         await handler(commandHandlerContext);
         return { ok: false, commandBody: nextCommandBody, isAdminUser, commandHandled: true };
       }

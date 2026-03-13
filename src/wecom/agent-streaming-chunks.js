@@ -32,11 +32,11 @@ export function createWecomAgentStreamingChunkManager({
         state.streamChunkLastSentAt = now();
         state.streamChunkSentCount += 1;
         logger?.info?.(
-          `wecom: streamed block chunk ${state.streamChunkSentCount} (${reason}), bytes=${getByteLength(chunkText)}`,
+          `wechat_work: streamed block chunk ${state.streamChunkSentCount} (${reason}), bytes=${getByteLength(chunkText)}`,
         );
       })
       .catch((streamErr) => {
-        logger?.warn?.(`wecom: failed to send streaming block chunk: ${String(streamErr)}`);
+        logger?.warn?.(`wechat_work: failed to send streaming block chunk: ${String(streamErr)}`);
       });
     await state.streamChunkSendChain;
   };

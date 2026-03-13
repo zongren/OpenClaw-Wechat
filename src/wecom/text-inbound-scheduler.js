@@ -60,14 +60,14 @@ export function createWecomTextInboundScheduler({
           task: () => {
             const processInboundMessage = getProcessInboundMessage();
             if (typeof processInboundMessage !== "function") {
-              throw new Error("wecom: processInboundMessage is not ready");
+              throw new Error("wechat_work: processInboundMessage is not ready");
             }
             return processInboundMessage(payload);
           },
         }),
       )
       .catch((err) => {
-        api.logger.error?.(`wecom: async text processing failed (${reason}): ${err.message}`);
+        api.logger.error?.(`wechat_work: async text processing failed (${reason}): ${err.message}`);
       });
   }
 
@@ -81,7 +81,7 @@ export function createWecomTextInboundScheduler({
     if (!mergedContent) return;
 
     api.logger.info?.(
-      `wecom: flushing debounced text buffer key=${debounceKey} count=${buffered.messages.length} reason=${reason}`,
+      `wechat_work: flushing debounced text buffer key=${debounceKey} count=${buffered.messages.length} reason=${reason}`,
     );
     dispatchTextPayload(
       api,
@@ -133,7 +133,7 @@ export function createWecomTextInboundScheduler({
         timer,
         updatedAt: Date.now(),
       });
-      api.logger.info?.(`wecom: buffered text message key=${debounceKey} count=1 windowMs=${debounceConfig.windowMs}`);
+      api.logger.info?.(`wechat_work: buffered text message key=${debounceKey} count=1 windowMs=${debounceConfig.windowMs}`);
       return;
     }
 

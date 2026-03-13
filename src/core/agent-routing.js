@@ -313,7 +313,7 @@ export function resolveWecomAgentRoute({
   const canApplySelectedAgent = selectedAgentId && (knownSelectedAgent || allowUnknownAgentId);
 
   if (selectedAgentId && !canApplySelectedAgent) {
-    logger?.warn?.(`wecom: dynamic route ignored unknown agentId=${selectedAgentId}`);
+    logger?.warn?.(`wechat_work: dynamic route ignored unknown agentId=${selectedAgentId}`);
   }
 
   const finalAgentId = canApplySelectedAgent ? selectedAgentId : normalizedBaseAgentId;

@@ -88,7 +88,7 @@ function enqueueInboundTask({
       }),
     )
     .catch((err) => {
-      api.logger.error?.(`wecom: async ${errorLabel} processing failed: ${err.message}`);
+      api.logger.error?.(`wechat_work: async ${errorLabel} processing failed: ${err.message}`);
     });
 }
 

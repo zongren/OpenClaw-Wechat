@@ -79,7 +79,7 @@ export function createWecomLateReplyWatcher({
       const timeoutMs = Math.max(1, Number(watchMs) || 1);
       const pollingMs = Math.max(0, Number(pollMs) || 0);
       const deadline = watchStartedAt + timeoutMs;
-      logger?.info?.(`wecom: late reply watcher started session=${sessionId} reason=${reason} timeoutMs=${timeoutMs}`);
+      logger?.info?.(`wechat_work: late reply watcher started session=${sessionId} reason=${reason} timeoutMs=${timeoutMs}`);
 
       while (now() < deadline) {
         if (isDelivered()) return;
@@ -107,18 +107,18 @@ export function createWecomLateReplyWatcher({
           markTranscriptReplyDelivered(sessionId, parsed.transcriptMessageId);
           markDelivered();
           logger?.info?.(
-            `wecom: delivered async late reply session=${sessionId} transcriptMessageId=${parsed.transcriptMessageId}`,
+            `wechat_work: delivered async late reply session=${sessionId} transcriptMessageId=${parsed.transcriptMessageId}`,
           );
           return;
         }
       }
 
       if (!isDelivered()) {
-        logger?.warn?.(`wecom: late reply watcher timed out session=${sessionId} timeoutMs=${timeoutMs}`);
+        logger?.warn?.(`wechat_work: late reply watcher timed out session=${sessionId} timeoutMs=${timeoutMs}`);
         await onFailureFallback(`late reply watcher timed out after ${timeoutMs}ms`);
       }
     } catch (err) {
-      logger?.warn?.(`wecom: late reply watcher failed: ${String(err?.message || err)}`);
+      logger?.warn?.(`wechat_work: late reply watcher failed: ${String(err?.message || err)}`);
       if (!isDelivered()) {
         await onFailureFallback(err);
       }

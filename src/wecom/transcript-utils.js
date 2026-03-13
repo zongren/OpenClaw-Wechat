@@ -82,7 +82,7 @@ export async function resolveSessionTranscriptFilePath({ storePath, sessionKey, 
     return join(dirname(storePath), sessionFile);
   } catch (err) {
     logger?.warn?.(
-      `wecom: failed to resolve session transcript path from store (${sessionKey}): ${String(err?.message || err)}`,
+      `wechat_work: failed to resolve session transcript path from store (${sessionKey}): ${String(err?.message || err)}`,
     );
     return fallbackPath;
   }

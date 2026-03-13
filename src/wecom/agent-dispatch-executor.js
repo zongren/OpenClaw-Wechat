@@ -103,12 +103,12 @@ export async function executeWecomAgentDispatchFlow({
     if (progressNoticeDelayMs > 0) {
       progressNoticeTimer = setTimeout(() => {
         sendProgressNotice().catch((noticeErr) => {
-          api?.logger?.warn?.(`wecom: failed to send progress notice: ${String(noticeErr)}`);
+          api?.logger?.warn?.(`wechat_work: failed to send progress notice: ${String(noticeErr)}`);
         });
       }, progressNoticeDelayMs);
     }
 
-    api?.logger?.info?.(`wecom: waiting for agent reply (timeout=${replyTimeoutMs}ms)`);
+    api?.logger?.info?.(`wechat_work: waiting for agent reply (timeout=${replyTimeoutMs}ms)`);
     const dispatchHandlers = createWecomAgentDispatchHandlers({
       api,
       state: dispatchState,
@@ -168,7 +168,7 @@ export async function executeWecomAgentDispatchFlow({
       dispatchResult,
     });
   } catch (dispatchErr) {
-    api?.logger?.warn?.(`wecom: dispatch failed: ${String(dispatchErr)}`);
+    api?.logger?.warn?.(`wechat_work: dispatch failed: ${String(dispatchErr)}`);
     if (isDispatchTimeoutError(dispatchErr)) {
       dispatchState.suppressLateDispatcherDeliveries = true;
       const finalizedVisiblePartial = await finalizeWecomAgentVisiblePartialReply({

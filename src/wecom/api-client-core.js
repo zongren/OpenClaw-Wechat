@@ -51,20 +51,20 @@ export function createWecomApiClientCore({
     if (!isLikelyHttpProxyUrl(normalized)) {
       if (!invalidProxyCache.has(normalized)) {
         invalidProxyCache.add(normalized);
-        logger?.warn?.(`wecom: outboundProxy ignored (invalid url): ${printableProxy}`);
+        logger?.warn?.(`wechat_work: outboundProxy ignored (invalid url): ${printableProxy}`);
       }
       return null;
     }
     try {
       const dispatcher = new proxyAgentCtor(normalized);
       proxyDispatcherCache.set(normalized, dispatcher);
-      logger?.info?.(`wecom: outbound proxy enabled (${printableProxy})`);
+      logger?.info?.(`wechat_work: outbound proxy enabled (${printableProxy})`);
       return dispatcher;
     } catch (err) {
       if (!invalidProxyCache.has(normalized)) {
         invalidProxyCache.add(normalized);
         logger?.warn?.(
-          `wecom: outboundProxy init failed (${printableProxy}): ${String(err?.message || err)}`,
+          `wechat_work: outboundProxy init failed (${printableProxy}): ${String(err?.message || err)}`,
         );
       }
       return null;

@@ -79,7 +79,7 @@ export function createWecomSessionResetter({ dateNow = Date.now } = {}) {
       archivedTranscriptPath = archived.archivedPath || "";
     } catch (err) {
       logger?.warn?.(
-        `wecom: failed to archive transcript during local reset session=${normalizedSessionKey}: ${String(err?.message || err)}`,
+        `wechat_work: failed to archive transcript during local reset session=${normalizedSessionKey}: ${String(err?.message || err)}`,
       );
     }
 
@@ -148,7 +148,7 @@ export function createWecomSessionResetter({ dateNow = Date.now } = {}) {
     }
 
     api?.logger?.info?.(
-      `wecom: local session reset account=${normalizedAccountId} agent=${routedAgentId || "main"} session=${sessionKey} cleared=${result.cleared ? "yes" : "no"}`,
+      `wechat_work: local session reset account=${normalizedAccountId} agent=${routedAgentId || "main"} session=${sessionKey} cleared=${result.cleared ? "yes" : "no"}`,
     );
 
     return {

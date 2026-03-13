@@ -59,7 +59,7 @@ export function createWecomAgentDispatchHandlers({
   return {
     deliver: async (payload, info) => {
       if (state.suppressLateDispatcherDeliveries) {
-        logger?.info?.("wecom: suppressed late dispatcher delivery after timeout handoff");
+        logger?.info?.("wechat_work: suppressed late dispatcher delivery after timeout handoff");
         return;
       }
       if (state.hasDeliveredReply) {
@@ -79,11 +79,11 @@ export function createWecomAgentDispatchHandlers({
           if (tailText) {
             await sendTextToUser(tailText);
             logger?.info?.(
-              `wecom: delivered tail of late final reply for ${fromUser}, tail_bytes=${tailText.length}`,
+              `wechat_work: delivered tail of late final reply for ${fromUser}, tail_bytes=${tailText.length}`,
             );
           } else {
             logger?.info?.(
-              `wecom: late final arrived but no tail to send (finalText=${finalText.length}b, streamedText=${streamedText.length}b)`,
+              `wechat_work: late final arrived but no tail to send (finalText=${finalText.length}b, streamedText=${streamedText.length}b)`,
             );
           }
           state.hasDeliveredFinalText = true;
@@ -91,15 +91,15 @@ export function createWecomAgentDispatchHandlers({
           // Multiple finals arrived - this can happen when agent sends intermediate status then real final.
           // Deliver every subsequent final as an additional message (don't gate on hasDeliveredFinalText).
           logger?.warn?.(
-            `wecom: received additional final after hasDeliveredReply=true, delivering as new message (length=${payload.text.length})`,
+            `wechat_work: received additional final after hasDeliveredReply=true, delivering as new message (length=${payload.text.length})`,
           );
           const formattedReply = markdownToWecomText(payload.text);
           await sendTextToUser(formattedReply);
-          logger?.info?.(`wecom: sent additional final reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
+          logger?.info?.(`wechat_work: sent additional final reply to ${fromUser}: ${formattedReply.slice(0, 50)}...`);
           // Don't set hasDeliveredFinalText here - allow unlimited subsequent finals
         } else {
           logger?.info?.(
-            `wecom: ignoring late reply kind=${info.kind} hasDeliveredFinalText=${state.hasDeliveredFinalText} streamingEnabled=${streamingEnabled} streamChunkSentCount=${state.streamChunkSentCount}`,
+            `wechat_work: ignoring late reply kind=${info.kind} hasDeliveredFinalText=${state.hasDeliveredFinalText} streamingEnabled=${streamingEnabled} streamChunkSentCount=${state.streamChunkSentCount}`,
           );
         }
         return;
@@ -117,18 +117,18 @@ export function createWecomAgentDispatchHandlers({
       if (info.kind !== "final") return;
 
       logger?.info?.(
-        `wecom: received final delivery hasDeliveredReply=${state.hasDeliveredReply} hasDeliveredFinalText=${state.hasDeliveredFinalText} text_length=${payload.text?.length || 0}`,
+        `wechat_work: received final delivery hasDeliveredReply=${state.hasDeliveredReply} hasDeliveredFinalText=${state.hasDeliveredFinalText} text_length=${payload.text?.length || 0}`,
       );
 
       let deliveredFinalText = false;
       if (payload.text) {
         if (isAgentFailureText(payload.text)) {
-          logger?.warn?.(`wecom: upstream returned failure-like payload: ${payload.text}`);
+          logger?.warn?.(`wechat_work: upstream returned failure-like payload: ${payload.text}`);
           await sendFailureFallback(payload.text);
           return;
         }
 
-        logger?.info?.(`wecom: delivering ${info.kind} reply, length=${payload.text.length}`);
+        logger?.info?.(`wechat_work: delivering ${info.kind} reply, length=${payload.text.length}`);
         if (streamingEnabled) {
           await flushStreamingBuffer({ force: true, reason: "final" });
           await state.streamChunkSendChain;
@@ -143,7 +143,7 @@ export function createWecomAgentDispatchHandlers({
             state.hasDeliveredFinalText = true;
             deliveredFinalText = true;
             logger?.info?.(
-              `wecom: streaming reply completed for ${fromUser}, chunks=${state.streamChunkSentCount}${tailText ? " +tail" : ""}`,
+              `wechat_work: streaming reply completed for ${fromUser}, chunks=${state.streamChunkSentCount}${tailText ? " +tail" : ""}`,
             );
           }
         }
@@ -166,7 +166,7 @@ export function createWecomAgentDispatchHandlers({
           state.hasDeliveredReply = true;
           state.hasDeliveredFinalText = true;
           deliveredFinalText = true;
-          logger?.info?.(`wecom: sent AI reply to ${fromUser}: ${finalReplyText.slice(0, 50)}...`);
+          logger?.info?.(`wechat_work: sent AI reply to ${fromUser}: ${finalReplyText.slice(0, 50)}...`);
         }
       }
 
@@ -196,11 +196,11 @@ export function createWecomAgentDispatchHandlers({
     },
     onError: async (err, info) => {
       if (state.suppressLateDispatcherDeliveries) return;
-      logger?.error?.(`wecom: ${info.kind} reply failed: ${String(err)}`);
+      logger?.error?.(`wechat_work: ${info.kind} reply failed: ${String(err)}`);
       try {
         await sendFailureFallback(err);
       } catch (fallbackErr) {
-        logger?.error?.(`wecom: failed to send fallback reply: ${fallbackErr.message}`);
+        logger?.error?.(`wechat_work: failed to send fallback reply: ${fallbackErr.message}`);
       }
     },
   };

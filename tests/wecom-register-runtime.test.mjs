@@ -77,8 +77,8 @@ test("register logs startup and registers channel/routes", () => {
   assert.equal(calls.registerTool, 1);
   assert.equal(calls.botRoute, 1);
   assert.equal(calls.agentRoutes, 1);
-  assert.ok(logs.info.some((line) => line.includes("wecom: config loaded")));
-  assert.ok(logs.info.some((line) => line.includes("wecom: stream.manager")));
+  assert.ok(logs.info.some((line) => line.includes("wechat_work: config loaded")));
+  assert.ok(logs.info.some((line) => line.includes("wechat_work: stream.manager")));
 });
 
 test("register warns when no route available", () => {

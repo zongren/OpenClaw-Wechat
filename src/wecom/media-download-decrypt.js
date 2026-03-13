@@ -48,7 +48,7 @@ export function smartDecryptWecomFileBuffer({
     const lengthRatio = decryptedBuffer.length / Math.max(1, buffer.length);
     if (lengthRatio > 0.5 && lengthRatio < 2.5) {
       logger?.warn?.(
-        `wecom: decrypt result uncertain (source=${sourceUrl || "unknown"}) raw=${buffer.length} decrypted=${decryptedBuffer.length}; fallback to decrypted`,
+        `wechat_work: decrypt result uncertain (source=${sourceUrl || "unknown"}) raw=${buffer.length} decrypted=${decryptedBuffer.length}; fallback to decrypted`,
       );
       return { buffer: decryptedBuffer, decrypted: true, reason: "decrypt-length-ratio" };
     }
