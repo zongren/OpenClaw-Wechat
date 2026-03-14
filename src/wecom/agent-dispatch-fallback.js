@@ -69,7 +69,12 @@ export async function handleWecomAgentPostDispatchFallback({
     }
   }
 
-  if (state.hasDeliveredReply || state.hasDeliveredPartialReply) return;
+  if (state.hasDeliveredReply || state.hasDeliveredPartialReply) {
+    // A reply was already delivered, but sub-agents may still produce output.
+    // Start the late reply watcher to catch any additional finals.
+    await startLateReplyWatcher("post-dispatch-watch-for-more");
+    return;
+  }
 
   const counts = dispatchResult?.counts ?? {};
   const queuedFinal = dispatchResult?.queuedFinal === true;

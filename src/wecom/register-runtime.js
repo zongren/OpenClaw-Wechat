@@ -1,4 +1,5 @@
 import { analyzeWecomAccountConflicts } from "./account-diagnostics.js";
+import { setWecomConnectionState } from "./channel-status-state.js";
 
 export function createWecomRegisterRuntime({
   setGatewayRuntime,
@@ -138,6 +139,20 @@ export function createWecomRegisterRuntime({
     if (webhookGroups.size === 0 && !botRouteRegistered && longConnectionStarted === 0) {
       api.logger.warn?.("wechat_work: no enabled account with valid config found; webhook route not registered");
       return;
+    }
+
+    // Mark agent webhook accounts as connected so the health monitor doesn't treat
+    // inbound-activity TTL expiry as a "stopped" condition between messages.
+    if (webhookGroups.size > 0) {
+      const agentAccountIds = new Set();
+      for (const accounts of webhookGroups.values()) {
+        for (const account of accounts) {
+          agentAccountIds.add(String(account?.accountId ?? "default").trim().toLowerCase() || "default");
+        }
+      }
+      for (const accountId of agentAccountIds) {
+        setWecomConnectionState({ accountId, connected: true, transport: "agent.webhook" });
+      }
     }
   }
 

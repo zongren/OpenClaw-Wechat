@@ -50,8 +50,15 @@ export function createWecomAgentLateReplyRuntime({
   };
 
   const startLateReplyWatcher = (reason = "pending-final") => {
-    if (dispatchState.hasDeliveredReply || dispatchState.hasDeliveredPartialReply || lateReplyWatcherPromise) return false;
+    // Allow watcher to start even if we've already delivered a reply, to catch late sub-agent outputs
+    if (lateReplyWatcherPromise) return false;
 
+    // When a reply was already delivered (watch-for-more case), use a per-watcher flag
+    // so the watcher isn't immediately short-circuited by hasDeliveredReply=true.
+    // Also pass a no-op markDelivered so the watcher keeps polling after each delivery,
+    // allowing it to catch multiple additional finals from sub-agents.
+    const alreadyDelivered = dispatchState.hasDeliveredReply || dispatchState.hasDeliveredPartialReply;
+    const watcherDelivered = { value: false };
     const watchStartedAt = now();
     const watchId = `${sessionId}:${msgId || watchStartedAt}:${randomToken()}`;
     lateReplyWatcherPromise = ensureLateReplyWatcherRunner()({
@@ -66,10 +73,10 @@ export function createWecomAgentLateReplyRuntime({
       watchMs: lateReplyWatchMs,
       pollMs: lateReplyPollMs,
       activeWatchers,
-      isDelivered: () => dispatchState.hasDeliveredReply,
-      markDelivered: () => {
-        dispatchState.hasDeliveredReply = true;
-      },
+      isDelivered: alreadyDelivered ? () => watcherDelivered.value : () => dispatchState.hasDeliveredReply,
+      markDelivered: alreadyDelivered
+        ? () => {} // no-op: keep polling to catch multiple sub-agent finals
+        : () => { dispatchState.hasDeliveredReply = true; },
       sendText: async (text) => sendTextToUser(text),
       onFailureFallback: async (err) => sendFailureFallback(err),
     }).finally(() => {

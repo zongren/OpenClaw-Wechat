@@ -24,8 +24,8 @@ export function resolveWecomAgentReplyRuntimePolicy({
   asNumber,
   requireEnv,
   minReplyTimeoutMs = 15000,
-  defaultReplyTimeoutMs = 90000,
-  defaultLateReplyWatchMs = 180000,
+  defaultReplyTimeoutMs = 3600000, // 1 hour (was 90s)
+  defaultLateReplyWatchMs = 3600000, // 1 hour (was 3 min)
   defaultLateReplyPollMs = 2000,
 } = {}) {
   assertFunction("asNumber", asNumber);
@@ -40,12 +40,9 @@ export function resolveWecomAgentReplyRuntimePolicy({
   );
   const lateReplyWatchMs = Math.max(
     30000,
-    Math.min(
-      10 * 60 * 1000,
-      asNumber(
-        cfg?.env?.vars?.WECOM_LATE_REPLY_WATCH_MS ?? requireEnv("WECOM_LATE_REPLY_WATCH_MS"),
-        Math.max(replyTimeoutMs, defaultLateReplyWatchMs),
-      ),
+    asNumber(
+      cfg?.env?.vars?.WECOM_LATE_REPLY_WATCH_MS ?? requireEnv("WECOM_LATE_REPLY_WATCH_MS"),
+      Math.max(replyTimeoutMs, defaultLateReplyWatchMs),
     ),
   );
   const lateReplyPollMs = Math.max(
